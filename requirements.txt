@@ -4,3 +4,5 @@ matplotlib
 scikit-learn
 prophet
 psycopg2-binary
+plotly
+nbformat
