@@ -17,10 +17,14 @@ class VelibData:
         'velib' : True,
         'meteo' : True,
     }
+
     velib_csv = r'local_data/velib_orig.csv'
     meteo_csv = r'local_data/meteo_orig.csv'
     impute = False
-    def __init__(self, from_dt : datetime.datetime = datetime.date(2024, 12, 5), to_dt : datetime.datetime = None, debug = True, params : dict = None, cache = False):
+
+    def __init__(self, from_dt : datetime.datetime = datetime.date(2024, 12, 5), 
+                 to_dt : datetime.datetime = None, debug = True, 
+                 params : dict = None, cache = False, update_cache = False):
         if to_dt is None:
             to_dt = datetime.date.today()
         if params:
@@ -29,16 +33,17 @@ class VelibData:
         self.to_dt = to_dt
         self.debug = debug
         self.cache = cache
+        self.update_cache = update_cache
 
-    def load(self):
+    def extract(self):
         if self.params['velib']:
-            self.load_velib()
+            self.extract_velib()
         if self.params['meteo']:
-            self.load_meteo()
+            self.extract_meteo()
         return self
 
-    def load_velib(self):
-        if self.cache and Path(self.velib_csv).is_file():
+    def extract_velib(self):
+        if self.cache and not self.update_cache and Path(self.velib_csv).is_file():
             self.velib_data = pd.read_csv(self.velib_csv, parse_dates=['dt'])
             return self
         cmd = f"""
@@ -50,18 +55,18 @@ class VelibData:
         self.velib_data = VelibConnector(cmd).to_pandas()
         if self.debug:
             print(f'{len(self.velib_data)} lignes chargées sur velib_data pour la période de {self.velib_data.dt.min().date()} à {self.velib_data.dt.max().date()}')     
-        if self.cache:
+        if self.cache or self.update_cache:
             self.velib_data.to_csv(self.velib_csv)
         return self
 
-    def load_meteo(self):
-        if self.cache and Path(self.meteo_csv).is_file():
+    def extract_meteo(self):
+        if self.cache and not self.update_cache and Path(self.meteo_csv).is_file():
             self.meteo_data = pd.read_csv(self.meteo_csv)
             return self
         self.meteo_data = MeteoFranceConnector(self.from_dt, self.to_dt).to_pandas()
         if self.debug:
             print(f'{len(self.meteo_data)} lignes chargées sur meteo_data pour la période de {self.meteo_data.DATE.min()} à {self.meteo_data.DATE.max()}')
-        if self.cache:
+        if self.cache or self.update_cache:
             self.meteo_data.to_csv(self.meteo_csv)
         return self
         
@@ -74,8 +79,10 @@ class VelibData:
             self.transform_meteo()
         if self.params['velib'] and self.params['meteo']:
             self.data = pd.merge(self.velib_data, self.meteo_data, on='datehour', how='left')
-        else:
+        elif self.params['velib']:
             self.data = self.velib_data
+        elif self.params['meteo']:
+            self.data = self.meteo_data            
         if self.impute:
             ##Reconstruct missing data
             self.impute_data()
@@ -93,6 +100,7 @@ class VelibData:
             'bikes' : int,
             'delta' : int
         }
+        proper_types = {k:v for k,v in proper_types.items() if k in self.data.columns}
         self.data = self.data.astype(proper_types)
 
     def transform_velib(self, params : dict = None):
@@ -207,6 +215,9 @@ class VelibData:
             self.impute = True
 
     def impute_data(self):
+        if 'delta' not in self.data.columns:
+            print('Unable to impute data: no delta column.')
+            return
         if self.debug:
             print('Running imputer.')
         cols = ['delta', 'weekday', 'hour', 'weekend', 'holiday', 'preholiday']
@@ -329,68 +340,6 @@ class VelibData:
         group.loc[mask, 'delta'] = model.predict(X_pred).astype(int)
         return group['delta']
 
-    # def impute_by_datehours(self):
-    #     # Par heure
-    #     if self.debug:
-    #         print(f'KNNImputer calculé par datehour')
-    #     self.velib_data = self.velib_data.groupby('datehour', group_keys=False).apply(self.impute_datehour)
-    #     # Pour les heures sans données: par jour
-    #     if self.debug:
-    #         print(f'KNNImputer calculé par journée')
-    #     self.velib_data = self.velib_data.groupby(self.velib_data.datehour.dt.date, group_keys=False).apply(self.impute_datehour)
-
-    # def impute_datehour(self, group):
-    #     if not group.delta.notna().sum() or not group.delta.isna().sum():
-    #         return group
-    #     cols = ['convlat', 'convlon']
-    #     values = group[cols]
-    #     values['hour'] = group.datehour.dt.hour
-    #     values['deltarate'] = group.delta/group.capacity
-    #     # scaler = StandardScaler()
-    #     # values = scaler.fit_transform(group[cols])
-    #     # values = np.c_[values, group.datehour.dt.hour, group.delta/group.capacity]
-    #     # values = np.c_[values, group.datehour.dt.hour, group.delta]
-    #     imputer = KNNImputer(n_neighbors=2)
-    #     values = imputer.fit_transform(values)
-    #     group['delta'] = (values[:, -1] * group.capacity).astype(int)
-    #     # group['delta'] = values[:, -1].astype(int)
-    #     return group
-        
-    # def impute_cluster(self, i, c, total):
-    #     if self.debug:
-    #         print(f'Running KNNImputer for cluster {i} of {total}')
-    #     imputer = KNNImputer(n_neighbors=3, weights='distance')
-    #     imputer_types = {'datehour': 'int64'}
-    #     mask = self.velib_data['cluster'] == c
-    #     imputed_values = imputer.fit_transform(
-    #         self.velib_data.loc[mask, ['datehour', 'capacity', 'delta']].astype(imputer_types)
-    #     )
-    #     return mask.index[mask], imputed_values[:, -1]
-
-    # def clusterized_imputer(self):
-    #     counts = self.velib_data.cluster.nunique()
-    #     results = Parallel(n_jobs=-1, backend='threading')(
-    #         delayed(self.impute_cluster)(i, c, counts)
-    #         for i, c in enumerate(self.velib_data.cluster.unique())
-    #     )
-    #     for mask, values in results:
-    #         self.velib_data.loc[mask, 'delta'] = values
-    #     self.velib_data['delta'] = np.floor(self.velib_data['delta'])
-
-    # def clusterized_imputer_one_thread(self):
-    #     counts = self.velib_data.cluster.nunique()
-    #     for i, c in enumerate(self.velib_data.cluster.unique()):
-    #         if self.debug:
-    #             print(f'Running KNNImputer for {i} cluster out of {counts}')
-    #         imputer = KNNImputer(n_neighbors=3, weights='distance')
-    #         imputer_types = {
-    #             'datehour' : 'int64'
-    #         }
-    #         mask = self.velib_data['cluster'] == c
-    #         self.velib_data.loc[mask, 'delta'] = imputer.fit_transform(self.velib_data[self.velib_data.cluster == c][['datehour', 'capacity', 'delta']].astype(imputer_types))[:,-1]
-    #     self.velib_data['delta'] = np.floor(self.velib_data['delta'])
-            
-                
     def transform_meteo(self):
         if self.debug:
             print('Transformation: meteo_data')
@@ -405,6 +354,39 @@ class VelibData:
         for col in self.meteo_data.select_dtypes('object').columns:
             self.meteo_data[col] = self.meteo_data[col].str.replace(',', '.').astype(float)
         return self
+
+    @staticmethod
+    def help():
+        from IPython.display import Markdown, display
+        import inspect
+        def printmd(dat: str): display(Markdown(dat))
+        printmd('## VelibData functions and arguments')
+        printmd('### VelibData():')
+        display(dict(inspect.signature(VelibData).parameters))
+        printmd('### extract():')
+        display(dict(inspect.signature(VelibData().extract).parameters))
+        printmd('### transform():')
+        display(dict(inspect.signature(VelibData().transform).parameters))
+        printmd('### params dict:')
+        display(VelibData.params)
+        printmd('## Examples')
+        printmd('### Extract, transform and create united dataset for the period from 2024-12-05 to today:')
+        printmd("""```df = VelibData().extract().transform().data```""")
+        printmd("### Choose only February:")
+        printmd("""```df = VelibData(from_dt = datetime.date(2025, 2, 1), to_dt = datetime.date(2025, 3, 1)).extract().transform().data```""")
+        printmd("### Create united dataset but don't restore continuous time series and don't impute missing data:")
+        printmd("""```df = VelibData(params={'reconstruct_velib' = False}).extract().transform().data```""")
+        printmd("### Create united dataset without dropping stations/clusters outliers:")
+        printmd("""```df = VelibData(params={'drop_outliers' = False}).extract().transform().data```""")
+        printmd("### No clusters:")
+        printmd("""```df = VelibData(params={'clusters' = False}).extract().transform().data```""")
+        printmd("""### Don't add meteo data:""")
+        printmd("""```df = VelibData(params={'meteo': False}).extract().transform().data```""")
+        printmd("""### Use cache in local_data folder to save and load data (minimize online transactions):""")
+        printmd("""```df = VelibData(cache=True).extract().transform().data```""")
+        printmd("""### Recreate cache files with up to date data:""")
+        printmd("""```df = VelibData(update_cache=True).extract().transform().data```""")
+
 
 def load_holidays():
     """Chargement des dates de jours fériés en France métropolitaine
