@@ -6,3 +6,4 @@ prophet
 psycopg2-binary
 plotly
 nbformat
+requests
