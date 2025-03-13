@@ -1,5 +1,4 @@
 import plotly.graph_objects as go
-from velibconnector import VelibConnector
 import pandas as pd
 from scipy.spatial import ConvexHull, distance_matrix
 import numpy as np
@@ -7,7 +6,7 @@ from scipy.stats import zscore
 from sklearn.metrics import silhouette_score
 from sklearn.cluster import KMeans
 import plotly.express as px
-import datetime
+from plotly.subplots import make_subplots
 
 def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None):
     """
@@ -30,14 +29,17 @@ def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None
         Plotly designe les graphiques dans l'ordre inverse, donc mieux de mettre la ligne basse en avant pour que le FILL marche proprement.
 
     """
-    fig = go.Figure()
+    sec_y_active = any([t.get('secondary_y') for t in task])
+    fig = make_subplots(specs=[[{"secondary_y": True}]]) if sec_y_active else go.Figure()
+
     for t in task:
         x = t['x']
         y = t['y']
         fill = t.get('fill')
         color = t.get('color', 'black')
         name = t.get('name')
-        fig.add_traces([
+        secondary_y = t.get('secondary_y', False)
+        fig.add_trace(
             go.Scatter(
                 x=data[x],
                 y=data[y],
@@ -46,8 +48,7 @@ def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None
                 mode='lines+markers',
                 line={'color': color},
                 name=name
-            )
-        ])
+            ), secondary_y=secondary_y)
     fig.update_layout(
             title = title,
             legend_title_text = legend,
@@ -165,6 +166,13 @@ def convert_lat(lat, min_lat):
     lat -= min_lat
     return lat * 111000
 
+def get_best_silhouette_score(stations):
+    silhouette_scores = []
+    for k in range(50, 251):
+        kmeans = KMeans(n_clusters=k, random_state=0).fit(stations[['convlat', 'convlon']])
+        silhouette_scores.append(silhouette_score(stations[['convlat', 'convlon']], kmeans.labels_))
+    return np.argmax(silhouette_scores) + 50
+
 def draw_kmeans_silhouette(stations):
     # Calculer l'indice de silhouette pour différents nombres de clusters
     silhouette_scores = []
@@ -185,71 +193,8 @@ def get_station_clusters(stations, model):
     kmeans = model.fit(stations[['convlat', 'convlon']])
     return kmeans.labels_
 
-class VelibData:
-    def __init__(self, from_dt : str = '2024-12-05', to_dt : str = None, debug = True):
-        if to_dt == 'auto':
-            to_dt = datetime.date.today().strftime(r'%Y-%m-%d')
-        cmd = f"""
-        SELECT status_id, station, lat, lon,
-            delta, bikes, capacity, name,
-                dt from velib_all
-                where dt > '{from_dt}' {"and dt <'" + to_dt + "'" if to_dt else ""}
-        """
-        self.velib_data = VelibConnector(cmd).to_pandas()
-
-    def transform_velib(self, debug = False):
-        df = self.velib_data.copy()
-        if debug:
-            print(f'{len(df)} lignes chargées pour la période de {df.dt.min().date()} à {df.dt.max().date()}')
-        df['datehour'] = df.dt.dt.floor('h')
-        if debug:
-            print(f"""Suppression de {df.isna().sum().sum()} valeurs manquantes.""")
-        df.dropna()
-        full_duplicates_count = df.duplicated(['dt', 'bikes', 'capacity', 'station']).sum()
-        if debug:
-            print(f"""Suppression de {full_duplicates_count} ({round(full_duplicates_count/len(df)*100, 2)}%) doublons d'origine, c'est-à-dire des lignes identiques par les valeurs clé de données de temps réel Vélib: 'dt', 'bikes', 'capacity' et 'station'.""")            
-        df.drop_duplicates(['dt', 'bikes', 'capacity', 'station'], inplace=True)
-        calc_duplicated = df.duplicated(['datehour', 'station']).sum()
-        if debug:
-            print(f"""Il y a {calc_duplicated} ({round(calc_duplicated/len(df)*100, 2)}%) lignes qui réprésentent les mêmes stations pour les même dates et heures. On rejoint ces doublons""")
-        df = df.sort_values(['dt', 'status_id']).drop_duplicates(['datehour', 'station'])
-        df['delta'] = df.groupby('station')['bikes'].diff().fillna(df.delta)
-        # Ajout de clusters
-        stations = df[['station', 'lat', 'lon', 'name']].drop_duplicates()
-        # n_clusters : 53 le meilleur, meilleurs des plus grands = 81, 101, 123, 182
-        stations['labels'] = get_station_clusters(stations, KMeans(n_clusters=182, random_state=0))
-        df = pd.merge(df, stations[['station', 'labels']], on='station', how='left')
-        # Nettoyage des heures outliers
-        datehour_df = df.groupby('datehour').labels.nunique()
-        q = datehour_df.quantile([0.25, 0.75]).to_list()
-        # outliers comme q1 - delta(q3,q1)*1.5 et q3 + delta(q3,q1)*1.5
-        q_margin = (q[1] - q[0]) * 1.5
-        seuil_bas = q[0] - q_margin
-        seuil_haut = q[1] + q_margin
-        if debug:
-            print('Seuils de outliers:', seuil_bas, '-', seuil_haut)
-            print("Nombre de clusters:", df.labels.nunique())
-            print('Max clusters par heure:', datehour_df.max())
-            print('Min clusters par heure:', datehour_df.min())
-        top_outliers = datehour_df[datehour_df>seuil_haut]
-        top_outliers_count = top_outliers.count()
-        bottom_outliers = datehour_df[datehour_df<seuil_bas]
-        bottom_outliers_count = bottom_outliers.count()
-        total_hours = df.datehour.nunique()
-        if debug:
-            print("Nombre d'heures:", total_hours)
-            print('Nombre de top outliers:', top_outliers_count, f"{round(top_outliers_count/total_hours*100, 2)}%")
-            print('Nombre de bottom outliers:', bottom_outliers_count, f"{round(bottom_outliers_count/total_hours*100, 2)}%")
-        blacklist = bottom_outliers.index.to_list() + top_outliers.index.to_list()
-        total_rows = len(df)
-        dropped_rows = len(df[df.datehour.isin(blacklist)])
-        if debug:
-            print(f'A enlever {len(blacklist)} outliers, {dropped_rows} lignes soit {round(dropped_rows/total_rows*100, 2)}% de {total_rows} lignes en totale.')
-        # manual_cut = seuil_bas - 1
-        # blacklist = datehour_df[datehour_df<manual_cut].index.to_list()
-        # dropped_rows = len(clean_df[clean_df.datehour.isin(blacklist)])
-        # print(f'Si on coupe manuellement les heures avec moins de {manual_cut} clusters on supprime {len(blacklist)} outliers et {dropped_rows} lignes soit {round(dropped_rows/total_rows*100, 2)}% de {total_rows} ligne en totale.')
-
-        df = df[~df.datehour.isin(blacklist)]
-        self.velib_data = df
-        return self
+def get_longest_sequence_mask(data : pd.Series):
+    mask = data.notna()  # Boolean mask: True for non-NA values
+    groups = (mask != mask.shift()).cumsum() * mask  # Grouping consecutive True values
+    longest_group = groups.value_counts().idxmax()  # Find the largest group
+    return groups == longest_group
