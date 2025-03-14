@@ -121,10 +121,11 @@ class VelibData:
             print(f"""Suppression de {full_duplicates_count} ({round(full_duplicates_count/len(self.velib_data)*100, 2)}%) doublons d'origine, c'est-à-dire des lignes identiques par les valeurs clé de données de temps réel Vélib: 'dt', 'bikes', 'capacity' et 'station'.""")            
         self.velib_data.drop_duplicates(['dt', 'bikes', 'capacity', 'station'], inplace=True)
         ## Correction de capacité 0
-        def fix_capacity(group):
-            group['capacity'] = group.bikes.max()
-            return group['capacity']
-        self.velib_data['capacity'] = self.velib_data.groupby('station', group_keys=False)[['bikes','capacity']].apply(fix_capacity)
+        # def fix_capacity(group):
+        #     group['capacity'] = group.bikes.max()
+        #     return group['capacity']
+        # self.velib_data['capacity'] = self.velib_data.groupby('station', group_keys=False)[['bikes','capacity']].apply(fix_capacity)
+        self.velib_data['capacity'] = self.velib_data.groupby('station')['bikes'].transform('max')
         ## Introduire datehour
         self.velib_data['datehour'] = self.velib_data.dt.dt.floor('h')
         ## Merge (drop) les données multiple pour une heure
