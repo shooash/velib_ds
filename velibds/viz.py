@@ -14,7 +14,7 @@ class VelibDataViz:
         'secondary_y' : False
     }
     @staticmethod
-    def line(data : pd.DataFrame, tasks : list[dict], title : str = None, legend : str = None, xaxis : dict = {}, yaxis : dict = {}):
+    def line(data : pd.DataFrame, tasks : list[dict], title : str = None, legend : str = None, xaxis : dict = {}, yaxis : dict = {}, filename = None):
         """Designer un graphique linéaire
 
         Args:
@@ -41,9 +41,14 @@ class VelibDataViz:
             title = title,
             legend_title_text = legend,
             xaxis = xaxis,
-            yaxis = yaxis
+            yaxis = yaxis,
+            # width = 800
         )
-        fig.show()
+        if filename:
+        # f_name = "".join([x if x.isalnum() else "_" for x in title]) + '.html'
+            fig.write_html(filename, auto_open=True)
+        else:
+            fig.show()
 
 
 
