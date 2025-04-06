@@ -33,7 +33,7 @@ class MLP:
         'fit_params' : {
             'epochs' : 50, 
             'sample_weight' : None,
-            'batch_size' : 2048, 
+            'batch_size' : 32000, 
             'validation_split' : 0.1,
         }
     }
@@ -54,8 +54,12 @@ class MLP:
     fit_params = {
         'epochs' : 50, 
         'sample_weight' : None,
-        'batch_size' : 2048, 
+        # 'batch_size' : 2048, 
+        'batch_size' : 32000, 
         'validation_split' : 0.1,
+    }
+    predict_params = {
+        'batch_size' : 16000,
     }
     # Quels attributes on va sauvegarder
     SETTINGS_ATTRIBUTES = [
@@ -188,7 +192,7 @@ class MLP:
         compat_types = dict(zip(self.FEATURES, [float] * len(self.FEATURES)))
         X_test = X_test[self.FEATURES].copy().astype(compat_types)
         X_test.loc[:] = self.scaler.transform(X_test)
-        y_pred = self.model.predict(X_test).flatten()
+        y_pred = self.model.predict(X_test, **self.predict_params).flatten()
         return pd.Series(y_pred, index=X_test.index)
     
     def update_features(self, new_features : list):
@@ -284,6 +288,58 @@ class MLP:
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.01)
         self.history = self.model.fit(X_train, y_train, callbacks=[early_stopping, reduce_lr], **self.fit_params).history
 
+
+class MLP_lagged(MLP):
+    base_tag = 'lagged'
+    
+    def __init__(self, name = 'default', oversample=0, undersample=0, weights=True, long=False, custom_features = None, custom_optimizer = None, transform_lags = False, n_lags : int = 3, groupby : str = 'station'):
+        self.transform_lags = transform_lags
+        self.n_lags = n_lags
+        self.groupby = groupby
+        super().__init__(name, oversample, undersample, weights, long, custom_features, custom_optimizer)
+
+    def fit(self, X_train : pd.DataFrame, y_train : pd.Series, no_fit = False):
+        print(now(), 'Starting with X_train size:', X_train[self.FEATURES].shape)
+        X_train, y_train = self._transform(X_train, y_train)
+        if no_fit:
+            return self
+        self.X_train = X_train
+        self.y_train = y_train
+        super().compile()
+        print(now(), 'Fitting...')
+        super().__real_fit(X_train, y_train)
+        print(now(), 'Fitted!')
+        super().fit_params['sample_weight'] = None # Used only for fit but is not serializable
+        return self
+    
+    def predict(self, X_test : pd.DataFrame):
+        y_pred = []
+        for row in X_test.iterrows():
+            row = self.__add_lags_new_row(row)
+            pred = super().predict(pd.DataFrame({row.name : row}))[0]
+            y_pred.append(pred)
+            self.y_train.loc[row.name] = pred
+            self.X_train.loc[row.name] = row
+        return np.array(y_pred)            
+
+    def _transform(self, X_train, y_train):
+        if self.transform_lags:
+            X_train = self.__add_lags(X_train, y_train)
+        return super()._transform(X_train, y_train)
+    
+    def __add_lags(self, X_train, y_train):
+        self.train = pd.concat([X_train, y_train], axis=1)
+        for lag in range(1, self.n_lags + 1):
+            X_train[f'lag_{lag}'] = self.train.groupby(self.groupby)[self.y_train.name].shift(lag)
+            self.FEATURES.append(f'lag_{lag}')
+        X_train.dropna()
+    
+    def __add_lags_new_row(self, row : pd.Series):
+        last_vals = self.y_train[self.X_train[self.groupby == row[self.groupby]]][:-self.n_lags]
+        for lag in range(1, self.n_lags + 1):
+            row[f'lag_{lag}'] = last_vals[-lag]
+        return row
+    
 class BaseRegressor(MLP):
     base_tag = 'class'
     
@@ -313,7 +369,55 @@ class BaseRegressor(MLP):
     
     def save(self):
         raise Exception('Not implemented')
+
+class BaseRegressor_lagged(BaseRegressor):
+    base_tag = 'lagged'
     
+    def __init__(self, model, name = 'default', oversample=0, undersample=0, weights=True, long=False, custom_features = None, custom_optimizer = None, transform_lags = False, n_lags : int = 3, groupby : str = 'station'):
+        self.transform_lags = transform_lags
+        self.n_lags = n_lags
+        self.groupby = groupby
+        super().__init__(model, name, oversample, undersample, weights, long, custom_features, custom_optimizer)
+
+    def fit(self, X_train : pd.DataFrame, y_train : pd.Series, no_fit = False):
+        print(now(), 'Starting with X_train size:', X_train[self.FEATURES].shape)
+        X_train, y_train = self._transform(X_train, y_train)
+        self.X_train = X_train
+        self.y_train = y_train
+        print(now(), 'Fitting...')
+        super().__real_fit(X_train, y_train)
+        print(now(), 'Fitted!')
+        super().fit_params['sample_weight'] = None # Used only for fit but is not serializable
+        return self
+    
+    def predict(self, X_test : pd.DataFrame):
+        y_pred = []
+        for row in X_test.iterrows():
+            row = self.__add_lags_new_row(row)
+            pred = super().predict(pd.DataFrame({row.name : row}))[0]
+            y_pred.append(pred)
+            self.y_train.loc[row.name] = pred
+            self.X_train.loc[row.name] = row
+        return np.array(y_pred)            
+
+    def _transform(self, X_train, y_train):
+        if self.transform_lags:
+            X_train = self.__add_lags(X_train, y_train)
+        return super()._transform(X_train, y_train)
+    
+    def __add_lags(self, X_train, y_train):
+        self.train = pd.concat([X_train, y_train], axis=1)
+        for lag in range(1, self.n_lags + 1):
+            X_train[f'lag_{lag}'] = self.train.groupby(self.groupby)[self.y_train.name].shift(lag)
+            self.FEATURES.append(f'lag_{lag}')
+        X_train.dropna()
+    
+    def __add_lags_new_row(self, row : pd.Series):
+        last_vals = self.y_train[self.X_train[self.groupby == row[self.groupby]]][:-self.n_lags]
+        for lag in range(1, self.n_lags + 1):
+            row[f'lag_{lag}'] = last_vals[-lag]
+        return row
+
 def margin_error_rate(y_test, y_pred, margin = 2):
     errors = np.abs(y_test - y_pred)
     return (errors > margin).astype(int).sum()/len(errors)
@@ -378,3 +482,4 @@ def station_graph(df_test, y_pred, station : str, station_name : str = '', enabl
             'name' : 'Pred'
         }
     ], title=f'MLP regression for selected station {station_name or station} (4h smooth)', filename=filename)
+
