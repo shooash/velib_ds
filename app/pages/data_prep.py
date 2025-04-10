@@ -1,8 +1,55 @@
 import streamlit as st
 import pandas as pd
+import pandas as pd
 import plotly.express as px
 from velibdslib import get_border, points_to_geo_json, draw_stations_choroplethmap_scatter
 
+def show(): 
+    st.title("Exploration des données Vélib' Paris")
+
+    st.markdown("""
+    ## 🔍 Contexte du projet
+    Ce projet a pour objectif d'optimiser la disponibilité des vélos du service Vélib’ à Paris, en cherchant à prédire les flux de vélos (nombre d’emprunts et de retours) à chaque station.
+    """)
+
+    st.markdown("""
+    ## 🧱 Construction de la base de données
+    Les données ont été extraites des API Open Data de Vélib’ (station_status et station_information) et collectées toutes les heures via un script sur Google Cloud Run.
+
+    Elles sont stockées dans deux tables principales :
+    - **velib_status** : état en temps réel des stations (vélos disponibles, bornes, etc.)
+    - **velib_stations** : informations statiques (nom, localisation, capacité)
+
+    Ces deux sources ont été fusionnées dans une vue unifiée : `velib_all`, utilisée pour nos analyses.
+    """)
+
+    st.markdown("""
+    ## 🧹 Prétraitement des données
+    - Création d’une variable `delta` représentant la variation de vélos entre deux mises à jour successives
+    - Nettoyage des **doublons** complets et partiels
+    - Analyse des **valeurs manquantes** et **outliers**
+    - Création de la variable `datehour`
+    """)
+
+    st.markdown("""
+    ### 📉 Valeurs aberrantes : distribution des stations par heure
+    """)
+from velibdslib import get_border, points_to_geo_json, draw_stations_choroplethmap_scatter, draw_fig
+
+
+def show_hourly_usage_pattern():
+    usage_hourly = pd.read_hdf('app/data/usage_hourly.h5')
+    return draw_fig(usage_hourly, [
+        {'x' : 'hour', 'y' : 'delta_min', 'fill' : None, 'color' : 'blue', 'name' : 'Min'},
+        {'x' : 'hour', 'y' : 'delta_mean', 'fill' : 'rgba(0, 80, 100, 0.2)', 'color' : 'black', 'name' : 'Moyenne'},
+        {'x' : 'hour', 'y' : 'delta_max', 'fill' : 'rgba(100, 0, 80, 0.2)', 'color' : 'red', 'name' : 'Max'},
+    ],
+    title = 'Utilisation de vélos par heure',
+    legend = 'Somme de vélos partis/rendus',
+    xaxis={'title' : 'Heure', 'dtick': 1, 'range' : [0, 23]},
+    ret = True
+    )
+    
 def show(): 
     st.title("Exploration des données Vélib' Paris")
 
@@ -80,6 +127,8 @@ def show():
     - Stations vides plus fréquentes en matinée
     """)
 
+    st.plotly_chart(show_hourly_usage_pattern())
+    
     st.markdown("""
     ## ☁️ Analyse de la corrélation avec la météo
     Nous avons croisé les données Vélib’ avec les données Météo France :

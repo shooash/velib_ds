@@ -8,7 +8,7 @@ from sklearn.cluster import KMeans
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None):
+def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None, ret = False):
     """
     Designer un graphique linéaire
 
@@ -30,7 +30,7 @@ def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None
 
     """
     sec_y_active = any([t.get('secondary_y') for t in task])
-    fig = make_subplots(specs=[[{"secondary_y": True}]]) if sec_y_active else go.Figure()
+    fig = make_subplots(specs=[[{"secondary_y": sec_y_active}]])
 
     for t in task:
         x = t['x']
@@ -55,6 +55,8 @@ def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None
             xaxis = xaxis,
             yaxis = yaxis or {}
     )
+    if ret:
+        return fig
     fig.show()
     
 def draw_stations_choroplethmap_scatter(geojson : dict, data : pd.DataFrame, labels : str = 'labels', center : dict = {'lat': 48.85, 'lon': 2.35}, ret = False):
