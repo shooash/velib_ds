@@ -8,7 +8,7 @@ def show():
 
     st.markdown("""
     ## 🔍 Contexte du projet
-    Ce projet a pour objectif d'optimiser la disponibilité des vélos du service Vélib’ à Paris, en prédisant les flux de vélos (nombre d’emprunts et de retours) à chaque station.
+    Ce projet a pour objectif d'optimiser la disponibilité des vélos du service Vélib’ à Paris, en cherchant à prédire les flux de vélos (nombre d’emprunts et de retours) à chaque station.
     """)
 
     st.markdown("""
@@ -27,7 +27,7 @@ def show():
     - Création d’une variable `delta` représentant la variation de vélos entre deux mises à jour successives
     - Nettoyage des **doublons** complets et partiels
     - Analyse des **valeurs manquantes** et **outliers**
-    - Création de la variable `datehour` (troncature de la date à l'heure près)
+    - Création de la variable `datehour`
     """)
 
     st.markdown("""
