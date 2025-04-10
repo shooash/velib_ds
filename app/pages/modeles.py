@@ -1,5 +1,6 @@
 import streamlit as st
 import plotly.graph_objects as go
+import plotly.express as px
 import pandas as pd
 import json
 
@@ -204,19 +205,87 @@ Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 60 801 p
     df = pd.read_hdf('app/data/mlp_best_pred.h5')
     df_viz = df[df.station == chatelet]
     st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred']))
-    df_viz = df[df.station == lefebvre]
-    st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred'], tag = df_viz['name'].iloc[0] + ' (cas problématique)'))
-
-    df = pd.read_hdf('app/data/pred_bike_counts.h5')
-    st.dataframe(df[df.Tag == 'MLP'].drop(columns=['Tag']), hide_index=True)
+    # df_viz = df[df.station == lefebvre]
+    # st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred'], tag = df_viz['name'].iloc[0] + ' (cas problématique)'))
 
     st.write(
 """    
-### Réseau neuronal convolutif CNN
+### Réseaux neuronaux convolutif CNN
 
 Un modèle base de couches Conv1D et Dense qui prédit *24 valeur* 'delta' à la base d'une table 2d de features.
 
-> Chaque instance de données (24, num_features) représente les 24 echantillons pour chaque heure d'une journée donnée pour une station donnée (batch de dataset regrouppé par station et date).
+> Chaque instance de données (24, num_features) représente les 24 echantillons pour chaque heure d'une journée donnée pour une station donnée (batch de dataset regrouppé par station et date). Dans le dataset d'entrainement il y a 99 456 instances soit 1344 stations * 74 jours.
+
+Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 389 272 paramètres et à été entrainé en 42 epochs (arrété par *EarlyStopping*).
+
 """
     )
-    st.image('app/data/image_tables_sketch.png')
+    show_history('app/data/cnn_fit_hist.json', 'CNN smoothed weighted')
+
+    st.write(
+"""
+**Scores:**
+- *RMSE*: 1.76
+- *MAE*: 1.19
+- *RMSE pics*: 3.36
+- *MAE pics*: 2.73
+"""
+    )
+    chatelet = '82328045'
+    lefebvre = '3906215030'
+    
+    df_cnn = pd.read_hdf('app/data/cnn_best_pred.h5')
+    df_viz = df_cnn[df_cnn.station == chatelet]
+    st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred']))
+    # df_viz = df[df.station == lefebvre]
+    # st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred'], tag = df_viz['name'].iloc[0] + ' (cas problématique)'))
+
+    st.write(
+"""
+# Conclusions
+## XGB Performant
+Les modèles MLP et CNN présenté ont été les plus performants au cours de testes. Pour bien finalize le top-3 il vaut noter le **XGBRegressor** qui avec un lissage de données sur une fenêtre de **4** et weighting égale à **5** est capable pour des meilleurs prédictions:
+
+**Scores:**
+- *RMSE*: 1.4
+- *MAE*: 1.01
+- *RMSE pics*: 3.05
+- *MAE pics*: 2.62
+"""
+    )
+    df_xgb = pd.read_hdf('app/data/xgb_best_pred.h5')
+    df_viz = df_xgb[df_xgb.station == chatelet]
+    st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred']))
+
+    st.write(
+"""
+
+## Problème d'application
+Les Top-3 modèles permets de savoir avec une marge raisonnable combien de vélos ou de places libres il faut avoir pendant les heures de pointes le matin et le soir sur des stations comme Chatelet.
+"""
+    )
+    pred_bike_counts = pd.read_hdf('app/data/pred_bike_counts.h5')
+    st.dataframe(pred_bike_counts, hide_index=True)
+    st.write(
+"""
+Mais on constate également que si la prédiction est correcte pour Chatelet ce n'est pas toujours le cas. Même si la séléction de modèle s'appuyait déjà sur ce facteur, au niveau globale les modèles les plus performants montre un bon potentiel pour améliorations. On peut distinguer un nombre de stations problématiques. Voici le cas de MLP:
+"""
+    )
+    df_viz = df[df.station == lefebvre]
+    st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred'], tag = df_viz['name'].iloc[0] + ' (cas problématique MLP)'))
+    df_viz = df[df.station == '653205656']    
+    st.plotly_chart(show_station_pred(df_viz['datehour'], df_viz['delta'], df_viz['delta_test'], df_viz['pred'], tag = df_viz['name'].iloc[0] + ' (cas problématique MLP)'))
+
+    st.write(
+"""
+Ces problèmes se manifestent dans les erreures calculées par station:
+"""
+    )
+    mlp_stations_scores = pd.read_hdf('app/data/mlp_stations_scores.h5')
+    st.plotly_chart(px.box(mlp_stations_scores[['rmse', 'pic_rmse']], orientation='h', title='Distribution de RMSE et RMSE sur les heure de pointe (pic) pour les stations (MLP)', points="suspectedoutliers"))
+    st.dataframe(mlp_stations_scores)
+    st.write(
+"""
+Pour diminuer la disparité des stations en prédiction on pourrait envisager la séparation de dataset en deux partie selon l'efficacité de modèles actuelle au niveau local. Il y a encore du potentiel pour un réglage plus fin de modèle CNN qui permèt à estimer la rélation entre les valeurs 'delta' consécutives. Il est également possible avec plus de resources matériél d'elaborer une structure multidimensionnelle alternative pour séparer les calculs par station.
+"""
+    )
