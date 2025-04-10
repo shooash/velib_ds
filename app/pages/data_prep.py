@@ -1,8 +1,22 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from velibdslib import get_border, points_to_geo_json, draw_stations_choroplethmap_scatter
+from velibdslib import get_border, points_to_geo_json, draw_stations_choroplethmap_scatter, draw_fig
 
+
+def show_hourly_usage_pattern():
+    usage_hourly = pd.read_hdf('app/data/usage_hourly.h5')
+    return draw_fig(usage_hourly, [
+        {'x' : 'hour', 'y' : 'delta_min', 'fill' : None, 'color' : 'blue', 'name' : 'Min'},
+        {'x' : 'hour', 'y' : 'delta_mean', 'fill' : 'rgba(0, 80, 100, 0.2)', 'color' : 'black', 'name' : 'Moyenne'},
+        {'x' : 'hour', 'y' : 'delta_max', 'fill' : 'rgba(100, 0, 80, 0.2)', 'color' : 'red', 'name' : 'Max'},
+    ],
+    title = 'Utilisation de vélos par heure',
+    legend = 'Somme de vélos partis/rendus',
+    xaxis={'title' : 'Heure', 'dtick': 1, 'range' : [0, 23]},
+    ret = True
+    )
+    
 def show(): 
     st.title("Exploration des données Vélib' Paris")
 
@@ -80,6 +94,8 @@ def show():
     - Stations vides plus fréquentes en matinée
     """)
 
+    st.plotly_chart(show_hourly_usage_pattern())
+    
     st.markdown("""
     ## ☁️ Analyse de la corrélation avec la météo
     Nous avons croisé les données Vélib’ avec les données Météo France :
