@@ -24,7 +24,6 @@ def show_chatelet_alignement_figure_lines():
     fig.update_layout(title="Alignement des pics d'utilisation de la station Chatelet pour la 7ème semaine 2025")
     return fig
 
-
 @st.cache_resource
 def show_chatelet_smoothed():
     df_viz = pd.read_hdf(r"app/data/chatelet_une_semaine.h5")
@@ -74,7 +73,6 @@ def show_classic_models_pred_smooth():
     fig.update_layout(title='Valeurs prédites et réelles (delta) lissées pour la station Chatelet.')
     return fig
 
-
 def show_history(history_file:str, tag = ''):
     try:
         with open(history_file, 'r') as f:
@@ -92,7 +90,6 @@ def show_history(history_file:str, tag = ''):
     fig.update_layout(title=f"Historique d'apprentissage {tag}")
     st.plotly_chart(fig)
 
-
 def show_station_pred(dt, delta, test, pred, tag = 'Chatelet'):
     fig = go.Figure()
     fig.add_scatter(x=dt, y=delta, name="delta d'origine", visible='legendonly')
@@ -100,7 +97,6 @@ def show_station_pred(dt, delta, test, pred, tag = 'Chatelet'):
     fig.add_scatter(x=dt, y=pred, name="delta pred")
     fig.update_layout(title=f"Flux réel et predit pour la station {tag}")
     return fig
-
 
 def show():
     st.write(
@@ -157,7 +153,19 @@ Malgré les erreurs relativement faibles les modèles ne captent pas assez le dy
     
     st.write(
 """
-## Reseaux neuronaux
+## Modèle Prophet pour la station Châtelet
+
+Nous avons également testé le modèle Prophet, une méthode de prévision de séries temporelles développée par Facebook, sur les données de la station Châtelet. Ce modèle est particulièrement adapté aux séries temporelles avec des tendances fortes et des saisonnalités multiples.
+
+Cependant, malgré sa capacité à gérer les composantes saisonnières, les résultats obtenus pour la station Châtelet n'ont pas été satisfaisants. L'image suivante montre les performances du modèle Prophet, où l'on peut observer que les prédictions ne capturent pas correctement les variations réelles des données, en particulier les pics d'utilisation.
+
+""")
+    st.image("app/data/perf_prophet_chatelet.png", caption="Performance du modèle Prophet pour la station Châtelet")
+    st.write(
+"""
+Les limites observées peuvent être attribuées à la nature spécifique de nos données, notamment les heures de pointe flottantes et les variations soudaines qui ne suivent pas toujours des patterns saisonniers réguliers. Cela suggère que Prophet, bien qu’efficace pour des séries plus stables, n’est pas optimal pour ce cas d’utilisation sans ajustements supplémentaires significatifs.
+
+## Réseaux neuronaux
 
 La structure complèxe de données et leur volume propose l'utilisation de modèles MLP et CNN pour la prédiction de valeurs.
 
@@ -202,7 +210,6 @@ Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 60 801 p
     df = pd.read_hdf('app/data/pred_bike_counts.h5')
     st.dataframe(df[df.Tag == 'MLP'].drop(columns=['Tag']), hide_index=True)
 
-
     st.write(
 """    
 ### Réseau neuronal convolutif CNN
@@ -213,5 +220,3 @@ Un modèle base de couches Conv1D et Dense qui prédit *24 valeur* 'delta' à la
 """
     )
     st.image('app/data/image_tables_sketch.png')
-
-    
