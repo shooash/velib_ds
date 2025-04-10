@@ -57,7 +57,7 @@ def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None
     )
     fig.show()
     
-def draw_stations_choroplethmap_scatter(geojson : dict, data : pd.DataFrame, labels : str = 'labels', center : dict = {'lat': 48.85, 'lon': 2.35}):
+def draw_stations_choroplethmap_scatter(geojson : dict, data : pd.DataFrame, labels : str = 'labels', center : dict = {'lat': 48.85, 'lon': 2.35}, ret = False):
     fig = go.Figure()
     fig.add_trace(go.Choroplethmap(geojson=geojson, locations=data[labels], z=data[labels], marker_opacity=0.5))
     fig.add_trace(
@@ -83,7 +83,10 @@ def draw_stations_choroplethmap_scatter(geojson : dict, data : pd.DataFrame, lab
         title = "Clusters de stations Vélib'"
         )
 
-    fig.show()
+    if not ret:
+        fig.show()
+    else:
+        return fig
     
 def points_to_geo_json(data : list):
     result = {
