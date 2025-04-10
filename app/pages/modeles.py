@@ -102,28 +102,28 @@ def show_station_pred(dt, delta, test, pred, tag = 'Chatelet'):
 def show():
     st.write(
 """
-# Séléction de modèles
+# Sélection de modèles
 ## Challenges
-Dans le cadre d'analyse de comportement des modèles prédictifs nous avons dû considerer un nombre de traitements visants à minimiser les problèmes principaux de nos données.
+Dans le cadre d'analyse de comportement des modèles prédictifs nous avons dû considérer un nombre de traitements visant à minimiser les problèmes principaux de nos données.
 
 ### Pics de flux
 
-Il s'agit notamment des pics de flux qui répresentes des valeurs extrèmes et assez rares pour être considéré comme abérrantes. On marque ces enregistrement comme "rush" pour heure de pointe.
+Il s'agit notamment des pics de flux qui représentés des valeurs extrêmes et assez rares pour être considéré comme aberrantes. On marque ces enregistrement comme "rush" pour les heures de pointe.
 
-```Pour la période entre Dec'2024 et Mar'2025 on a 9.35% de flux > 4 et < -4 qui representent respectivement Q2 + 1.5 * IQR et Q1 - 1.5 * IQR.```
+```Pour la période entre Dec'2024 et Mar'2025 on a 9.35% de flux > 4 et < -4 qui représentent respectivement Q2 + 1.5 * IQR et Q1 - 1.5 * IQR.```
 
-Mais en rélité se sont les pics d'utilisation qu'on cherche à prédire: les vagues de prises et de retours massifs des vélos aux stations. On veux savoir à quel moment les utilisateurs sont censés de prendre beaucoup de vélo quand les fluctiations minima d'utilisation normale ne porte pas un tel intérêt pour nous.
+En réalité se sont les pics d'utilisation qu'on cherche à prédire: les vagues de prises et de retours massifs de vélos aux stations. On veux savoir à quel moment les utilisateurs sont censés de prendre beaucoup de vélos quand les fluctuations minima d'utilisation normale ne porte pas un tel intérêt pour nous.
 
 Pour balancer le dataset on a prévu plusieurs approches:
-- Overfitting, multiplication artificièle de class "rush" dans le dataset d'entrainement.
+- Overfitting, multiplication artificielle de class "rush" dans le dataset d'entrainement.
 - Underfitting: resampling de la classe majoritaire pour qu'elle soit seulement 3 fois plus grande que le class "rush".
 - Weighting: pour les modèles qui le supporte, matrice de multiplicateurs pour attribuer beaucoup plus d'importance au perte sur les enregistrements "rush".
 """
     )
     st.write(
 """
-### Heures de pointe flotantes
-Les pics mentionnés ne sont pas assez ponctuels comme on peut le constater dans l'exemple suivant. On voit que les prises et les retours de vélos massive peuvent arriver une heure plus tôt ou plus tard dans une station. C'est critique pour les évaluations de prédiction et les calcules de pertes. Si le modèle prédicte correctement le pic mais en réalité ce jour-là il à été enregistré une heure plus tard, on aura deux erreur importantes en place d'un bon score.
+### Heures de pointe flottantes
+Les pics mentionnés ne sont pas assez ponctuels comme on peut le constater dans l'exemple suivant. On voit que les prises et les retours de vélos massive peuvent arriver une heure plus tôt ou plus tard dans une station. C'est critique pour les évaluations de prédiction et les calcules de pertes. Si le modèle prédit correctement le pic mais en réalité ce jour-là il à été enregistré une heure plus tard, on aura deux erreur importantes en place d'un bon score.
 """)
     st.plotly_chart(show_chatelet_alignement_figure())    
     st.write(
@@ -138,14 +138,13 @@ Pour gérer ce problème, on peut "lisser" les courbes avec une moyenne à fenê
 """
 ## Modèles classiques
 
-On a testé classique, timeseries et rn.
-Pour les testes qui ont généré la table comparative ont a utiliser les modèles avec des paramètre par défaut.
+On a testé une série de modèles classique, des séries temporelle et des réseaux neuronaux. Un dataset en versions sans et avec lissage a servi pour l'entrainement. Sans surprise des modèles plus complexes ont démontré une meilleure performance.
 """
     )
     st.dataframe(pd.read_hdf('app/data/models_classics_0.h5'))
     st.write(
 """
-Malgré les erreurs relativement faibles les modèles ne captent pas assez le dynamique.
+Malgré les erreurs relativement faibles ses modèles ne captent pas assez le dynamique de flux de vélos.
 """
     ) 
     st.plotly_chart(show_classic_models_pred())
@@ -168,24 +167,24 @@ Les limites observées peuvent être attribuées à la nature spécifique de nos
 
 ## Réseaux neuronaux
 
-La structure complèxe de données et leur volume propose l'utilisation de modèles MLP et CNN pour la prédiction de valeurs.
+La structure complexe de données et leur volume propose l'utilisation de modèles MLP et CNN pour la prédiction de valeurs.
 
-Suite à nos testes les paramètres suivant de prétraitement de données et de modèles ont été séléctionnées pour les réseaux neuronnes:
+Suite à nos testes les paramètres suivant de prétraitement de données et de modèles ont été sélectionnées pour les réseaux neuronaux:
 
-- Lissage par un moyen flotant avec la taille de fenêtre 3.
-- Pas de surechantillonage.
+- Lissage par un moyen flottant avec la taille de fenêtre 3.
+- Pas de suréchantillonnage.
 - Fonction d'activation 'tanh'.
-- Une seule valeur de poid (sample weight) égale à 5 pour les 'deltas' négatifs et positifs dans le calcule de pertes.
+- Une seule valeur de poids (sample weight) égale à 5 pour les 'deltas' négatifs et positifs dans le calcule de pertes.
   
-> On utilise une fonction de loss personnalisée qui multiplie l'erreur moyenne absolue par 5 pour les heures de pointes detectées selon la valeur de 'delta' réel.
+> On utilise une fonction de loss personnalisée qui multiplie l'erreur moyenne absolue **MAE** par **5** pour les heures de pointes détectées selon la valeur de 'delta' réel.
 
 ### MultiLayer Perceptron MLP
 
 Un modèle *Sequential* de couches *Dense* qui prédit une valeur 'delta' à la base d'une ligne de features.
 
-> Une instance de données pour ce modèle (num_features,) est un echantillon de notre dataset: un enregistement pour une station donnée (coordonnées géographiques, cluster et capacity) au moment donné (hour, weekday, holiday etc.) avec les informations météo actuelles.
+> Une instance de données pour ce modèle (num_features,) est un échantillon de notre dataset: un enregistrement pour une station donnée (coordonnées géographiques, cluster et capacité) au moment donné (heure, jour de la semaine, jour férié etc.) avec les informations météo actuelles.
 
-Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 60 801 paramètres et à été entrainé en 200 epoches.
+Le modèle à été compilé avec l'optimisateur **'adam'**, il utilise 60 801 paramètres et à été entrainé en 200 époques.
 """
     )
     show_history('app/data/mlp_fit_hist.json', 'MLP smoothed weighted')
@@ -212,11 +211,11 @@ Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 60 801 p
 """    
 ### Réseaux neuronaux convolutif CNN
 
-Un modèle base de couches Conv1D et Dense qui prédit *24 valeur* 'delta' à la base d'une table 2d de features.
+Un modèle base de couches Conv1D et Dense qui prédit **24** valeur 'delta' à la base d'une **table 2d** de features.
 
-> Chaque instance de données (24, num_features) représente les 24 echantillons pour chaque heure d'une journée donnée pour une station donnée (batch de dataset regrouppé par station et date). Dans le dataset d'entrainement il y a 99 456 instances soit 1344 stations * 74 jours.
+> Chaque instance de données (24, num_features) représente les 24 échantillons pour chaque heure d'une journée donnée pour une station donnée (batch de dataset regroupé par station et date). Dans le dataset d'entrainement il y a 99 456 instances soit 1344 stations x 74 jours.
 
-Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 389 272 paramètres et à été entrainé en 42 epochs (arrété par *EarlyStopping*).
+Le modèle à été compilé avec l'optimisateur **'adam'**, il utilise 389 272 paramètres et à été entrainé en 42 époques (arrêté par *EarlyStopping*).
 
 """
     )
@@ -242,9 +241,9 @@ Le modèle à été compilé avec l'optimizateur **'adam'**, il utilise 389 272 
 
     st.write(
 """
-# Conclusions
+# Top-3
 ## XGB Performant
-Les modèles MLP et CNN présenté ont été les plus performants au cours de testes. Pour bien finalize le top-3 il vaut noter le **XGBRegressor** qui avec un lissage de données sur une fenêtre de **4** et weighting égale à **5** est capable pour des meilleurs prédictions:
+Les modèles MLP et CNN présenté ont été les plus performants au cours de testes. Pour bien finaliser le top-3 il vaut noter le **XGBRegressor** qui avec un lissage de données sur une fenêtre de **4** et weighting égale à **5** est capable pour des meilleurs prédictions:
 
 **Scores:**
 - *RMSE*: 1.4
@@ -261,14 +260,14 @@ Les modèles MLP et CNN présenté ont été les plus performants au cours de te
 """
 
 ## Problème d'application
-Les Top-3 modèles permets de savoir avec une marge raisonnable combien de vélos ou de places libres il faut avoir pendant les heures de pointes le matin et le soir sur des stations comme Chatelet.
+Les modèles Top-3 permettent de savoir avec une marge raisonnable combien de vélos ou de places libres il faut avoir pendant les heures de pointes le matin et le soir sur des stations comme Chatelet.
 """
     )
     pred_bike_counts = pd.read_hdf('app/data/pred_bike_counts.h5')
     st.dataframe(pred_bike_counts, hide_index=True)
     st.write(
 """
-Mais on constate également que si la prédiction est correcte pour Chatelet ce n'est pas toujours le cas. Même si la séléction de modèle s'appuyait déjà sur ce facteur, au niveau globale les modèles les plus performants montre un bon potentiel pour améliorations. On peut distinguer un nombre de stations problématiques. Voici le cas de MLP:
+Mais on constate également que si la prédiction est correcte pour Chatelet ce n'est pas toujours le cas. Même si la sélection de modèle s'appuyait déjà sur ce facteur, au niveau globale les modèles les plus performants montre un bon potentiel pour améliorations. On peut distinguer un nombre de stations problématiques. Voici le cas de MLP:
 """
     )
     df_viz = df[df.station == lefebvre]
@@ -278,7 +277,7 @@ Mais on constate également que si la prédiction est correcte pour Chatelet ce 
 
     st.write(
 """
-Ces problèmes se manifestent dans les erreures calculées par station:
+Ces problèmes se manifestent dans les erreurs calculées par station:
 """
     )
     mlp_stations_scores = pd.read_hdf('app/data/mlp_stations_scores.h5')
@@ -286,6 +285,7 @@ Ces problèmes se manifestent dans les erreures calculées par station:
     st.dataframe(mlp_stations_scores)
     st.write(
 """
-Pour diminuer la disparité des stations en prédiction on pourrait envisager la séparation de dataset en deux partie selon l'efficacité de modèles actuelle au niveau local. Il y a encore du potentiel pour un réglage plus fin de modèle CNN qui permèt à estimer la rélation entre les valeurs 'delta' consécutives. Il est également possible avec plus de resources matériél d'elaborer une structure multidimensionnelle alternative pour séparer les calculs par station.
+Pour diminuer la disparité des stations en prédiction on pourrait envisager la séparation de dataset en deux partie selon l'efficacité de modèles actuelle au niveau local. Il y a encore du potentiel pour un réglage plus fin de modèle CNN qui permet à estimer les relations entre les valeurs 'delta' consécutives.
+Il serait également possible, avec plus de pouvoir matériel de calcul, d'élaborer une structure multidimensionnelle alternative pour séparer explicitement les entrainement et les prédictions par station.
 """
     )
