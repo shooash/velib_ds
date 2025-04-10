@@ -1,6 +1,5 @@
 import streamlit as st
-from app.pages import intro, data_viz, modeles
-from velib_ds.app.pages import data_prep_old
+from app.pages import intro, data_viz, modeles, data_prep
 
 st.set_page_config(page_title="Projet Vélib'", layout="wide")
 
@@ -12,6 +11,6 @@ if page == "Introduction":
 elif page == "Data Vizualisation":
     data_viz.show()
 elif page == "Préparation des données":
-    data_prep_old.show()
+    data_prep.show()
 elif page == "Modélisation":
     modeles.show()
