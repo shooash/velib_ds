@@ -1,0 +1,10 @@
+{
+    "wl" : 3.0,
+    "wh" : 3.0,
+    "loss_fn" : "wmae",
+    "batch" : 256000,
+    "opt" : "adam",
+    "emb" : "",
+    "act" : "relu",
+    "epochs" : 300
+}

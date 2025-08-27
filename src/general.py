@@ -30,6 +30,7 @@ class DataFiles(SimpleNamespace):
     default_transformer_config = Storage.shared_data('transformer_params.default.json')
     transformer_config = Storage.configs('transfromer_params.json')
     transformer = Storage.models('transformer.joblib')
+    default_best_params = Storage.shared_data('best_params.default.json')
     best_params = Storage.configs('best_params.json')
 
 LOGGER = None
@@ -66,7 +67,9 @@ def load_transformer_params() -> dict:
 def load_best_params() -> dict:
     """Load best fitted parameters for MLPFlow"""
     if not os.path.isfile(DataFiles.best_params):
-        raise ValueError(f'Best parameters do not exist, save them to {DataFiles.best_params}')
+        with open(DataFiles.default_best_params) as src:
+            with open(DataFiles.best_params, 'w') as tgt:
+                tgt.write(src.read())
     # Load params from file
     with open(DataFiles.best_params) as f:
         return json.load(f)
