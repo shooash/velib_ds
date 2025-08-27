@@ -1,0 +1,81 @@
+# Global settings and defaults.
+## Check examples here for the actual language (ReadMe might be outdated): https://github.com/burningalchemist/sql_exporter/tree/master/examples
+global:
+  # Scrape timeouts ensure that:
+  #   (i)  scraping completes in reasonable time and
+  #   (ii) slow queries are canceled early when the database is already under heavy load
+  # Prometheus informs targets of its own scrape timeout (via the "X-Prometheus-Scrape-Timeout-Seconds" request header)
+  # so the actual timeout is computed as:
+  #   min(scrape_timeout, X-Prometheus-Scrape-Timeout-Seconds - scrape_timeout_offset)
+  #
+  # If scrape_timeout <= 0, no timeout is set unless Prometheus provides one. The default is 10s.
+  scrape_timeout: 20s
+  # Subtracted from Prometheus' scrape_timeout to give us some headroom and prevent Prometheus from timing out first.
+  # Must be strictly positive. The default is 500ms.
+  scrape_timeout_offset: 500ms
+  # Interval between dropping scrape_errors_total metric: by default (0s) metrics are persistent.
+  scrape_error_drop_interval: 0s
+  # Minimum interval between collector runs: by default (0s) collectors are executed on every scrape.
+  min_interval: 10m
+  # Maximum number of open connections to any one target. Metric queries will run concurrently on multiple connections,
+  # as will concurrent scrapes.
+  #
+  # If max_connections <= 0, then there is no limit on the number of open connections. The default is 3.
+  max_connections: 3
+  # Maximum number of idle connections to any one target. Unless you use very long collection intervals, this should
+  # always be the same as max_connections.
+  #
+  # If max_idle_connections <= 0, no idle connections are retained. The default is 3.
+  max_idle_connections: 3
+
+jobs:
+  - job_name: velib
+    collectors: [velib_collector]
+    static_configs:
+      - targets:
+          velib: 'postgresql://reader:public@34.163.111.108:5432/velib?sslmode=disable'
+
+collectors:
+  - collector_name: velib_collector
+    metrics:
+      - metric_name: pg_db_size_bytes
+        help: 'Disk space used by the database in bytes'
+        type: gauge
+        values:
+          - size
+        query_ref: _db_pg_database_size
+
+      - metric_name: velib_row_counts
+        help: 'Number of rows for base tables'
+        type: gauge
+        key_labels:
+          - relname
+        values:
+          - n_live_tup
+        query_ref: _tables_status
+
+      - metric_name: velib_status_last_hour_rows
+        help: 'Rows loaded to velib_status by the last hour runner'
+        type: gauge
+        values:
+          - count
+        query_ref: _last_hour_counts
+
+      - metric_name: velib_status_last_hour_stations
+        help: 'Distinct stations loaded to velib_status by the last hour runner'
+        type: gauge
+        values:
+          - distinct_count
+        query_ref: _last_hour_counts
+
+    queries:
+      - query_name: _db_pg_database_size
+        query: |
+          select pg_database_size(current_database()) as size
+      - query_name: _tables_status
+        query: |
+          select relname, n_live_tup from pg_stat_user_tables
+      - query_name: _last_hour_counts
+        query: |
+          select count(*) as count, count(distinct station) as distinct_count from velib_status where poll_dt >= now() AT TIME ZONE 'UTC' - interval '1 hour'
+

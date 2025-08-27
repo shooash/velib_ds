@@ -1,0 +1,33 @@
+groups:
+  - name: velib_data_alert
+    rules:
+      - alert: StationDuplicates
+        expr: velib_status_last_hour_rows - velib_status_last_hour_stations > 0
+        labels:
+          severity: warning
+        annotations:
+          summary: "Multiple stations per hour detected"
+          description: "There're several records for the same station(s) in the last hour's run."
+      - alert: StationsDecrease
+        expr: quantile_over_time(0.5, velib_status_last_hour_stations[1d]) > velib_status_last_hour_stations + 5
+        for: 2h
+        labels:
+          severity: error
+        annotations:
+          summary: "Data drop for velib_status register"
+          description: "We're getting over 5 stations less for the last two hours than during the last day."
+      - alert: GCPDown
+        expr: up{job="VelibSQL"} == 0
+        labels:
+          severity: error
+        annotations:
+          summary: "GCP connection down"
+          description: "Failed to load metrics from Google Platform SQL."
+
+      # - alert: Test
+      #   expr: velib_status_last_hour_stations > 0
+      #   labels:
+      #     severity: error
+      #   annotations:
+      #     summary: "TEST TEST Data drop for velib_status register"
+      #     description: "TEST TEST We're getting over 5 stations less for the last two hours than during the last day."

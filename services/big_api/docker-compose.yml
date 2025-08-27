@@ -1,0 +1,26 @@
+services:
+  fastapi_big:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USE_CUDA: "true"
+    container_name: fastapi-server-big
+    
+    command: uvicorn --app-dir /app/src fastapi_main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8001:8000"
+    volumes:
+      - ../../src:/app/src
+      - ../../local:/app/local
+      - ../../data:/app/data
+    environment:
+      - MLFLOW_TRACKING_URI=http://host.docker.internal:8080
+      - GIT_PYTHON_REFRESH=quiet
+      - USE_CUDA=true
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: [gpu]

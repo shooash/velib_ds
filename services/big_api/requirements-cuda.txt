@@ -1,0 +1,14 @@
+mlflow
+numpy
+pandas
+plotly
+psycopg2-binary
+pydantic
+requests
+scikit-learn
+tables
+tensorflow[and-cuda]
+fastapi
+uvicorn
+cudf-cu12
+dill

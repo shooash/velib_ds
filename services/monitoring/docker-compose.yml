@@ -1,0 +1,103 @@
+# Velib DS Project monitoring services group
+services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    # image: ghcr.io/mlflow/mlflow:v2.22.1
+    # build: ./mlflow
+    container_name: mlflow-server
+    command: |
+      mlflow server 
+      --host 0.0.0.0 
+      --port 8080
+      --backend-store-uri sqlite:///mlruns/mlruns_sqlite.db
+      --default-artifact-root file:///mlruns
+      --serve-artifacts
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../local/mlruns:/mlruns
+    restart: always
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:8080
+      - GIT_PYTHON_REFRESH=quiet
+    deploy:
+      mode: global
+
+  # Service velib_exporter to reveal MLFlow and data metrics for prometheus
+  velib_exporter:
+    build:
+      context: ./velib_exporter
+      dockerfile: Dockerfile
+    container_name: prometheus-velib-exporter
+    depends_on:
+      - mlflow
+    command: |
+      python prometheus_velib_exporter.py
+    volumes:
+      - ./velib_exporter:/app
+      - ../../local/data/stats:/app/stats
+      - ../../local/logs:/app/logs
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:8080
+    ports:
+      - 5000:5000
+    restart: unless-stopped
+    deploy:
+      mode: global
+
+  ## Service sql_exporter pour charger l'état de données sur les resources GCP
+  sql_exporter:
+    image: burningalchemist/sql_exporter
+    container_name: prometheus-sql-exporter
+    command: |
+      sql_exporter
+    volumes:
+      - ./sql_exporter/sql_exporter.yml:/sql_exporter.yml
+    ports:
+      - 9399:9399
+    restart: unless-stopped
+    deploy:
+      mode: global
+
+  alertmanager:
+    image: prom/alertmanager:main
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - 9093:9093
+    restart: unless-stopped
+    deploy:
+      mode: global
+
+  prometheus:
+    image: prom/prometheus:main
+    container_name: prometheus-server
+    ports:
+      - 9090:9090
+    depends_on:
+      - sql_exporter
+      - velib_exporter
+      - alertmanager
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus_alerts.yml:/etc/prometheus/prometheus_alerts.yml
+      - ./prometheus/prometheus_rules.yml:/etc/prometheus/prometheus_rules.yml
+    restart: unless-stopped
+    deploy:
+      mode: global
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - ../../local/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    env_file:
+      - ./grafana/config.monitoring
+    restart: unless-stopped
+    deploy:
+      mode: global
