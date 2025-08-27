@@ -1,0 +1,12 @@
+[
+    {
+        "wl" : [3.0],
+        "wh" : ["@wl"],
+        "loss_fn" : ["wmse", "wmae"],
+        "batch" : [8000, 16000, 32000, 64000, 128000, 256000, 512000],
+        "opt" : ["adam"],
+        "emb" : ["stations+clusters", "clusters", "stations", ""],
+        "act" : ["relu"],
+        "epochs" : [300]
+    }
+]

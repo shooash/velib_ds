@@ -1,0 +1,19 @@
+{
+    "encode_time" : [
+        ["hour", 24],
+        ["weekday", 7]
+        ],
+    "encode_lat" : ["lat"],
+    "encode_lon" : ["lon"],
+    "hotencode" : [],
+    "scale" : ["capacity", "temp", "precip", "gel", "vent", "lat", "lon"],
+    "nonscale" : ["weekend", "holiday", "preholiday", "postholiday", "pont", "vacances", "vacances_uni", "cluster", "station"],
+    "target" : "delta",
+    "smoothen" : true,
+    "smooth_window" : 3,
+    "reconstructed" : false,
+    "lagged_value" : true,
+    "lagged_value_3hours_mean" : true,
+    "mean_value" : true,
+    "mean_peaks" : true
+}
