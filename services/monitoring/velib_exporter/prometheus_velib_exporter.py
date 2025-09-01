@@ -44,7 +44,7 @@ class VelibExporter:
         mlflow_labels = ['experiment', 'starter', 'weights', 'batch', 'loss_fn']
         self.mlflow_stats = {
             'runs_counter' : Gauge('mlflow_runs', 'Number of MLFlow runs', labelnames=['experiment'], registry=self.registry),
-            'runs_time_seconds' : Summary('mlflow_last_run_time', 'Execution time for last MLFlow run', labelnames=mlflow_labels, registry=self.registry),
+            'runs_time_seconds' : Gauge('mlflow_last_run_time', 'Execution time for last MLFlow run', labelnames=mlflow_labels, registry=self.registry),
             'runs_success' : Gauge('mlflow_last_run_success', 'If run status is FINISHED', labelnames=mlflow_labels, registry=self.registry),
             'runs_running' : Gauge('mlflow_last_run_running', 'If run status is RUNNING', labelnames=mlflow_labels, registry=self.registry),
             'runs_failed' : Gauge('mlflow_last_run_failed', 'If run status is FAILED', labelnames=mlflow_labels, registry=self.registry),
@@ -84,7 +84,7 @@ class VelibExporter:
             self.mlflow_stats['runs_success'].labels(**id_dict).set(1 if status == 'FINISHED' else 0)
             self.mlflow_stats['runs_running'].labels(**id_dict).set(1 if status == 'RUNNING' else 0)
             self.mlflow_stats['runs_failed'].labels(**id_dict).set(1 if status == 'FAILED' else 0)
-            self.mlflow_stats['runs_time_seconds'].labels(**id_dict).observe((r.end_time - r.start_time).total_seconds())
+            self.mlflow_stats['runs_time_seconds'].labels(**id_dict).set((r.end_time - r.start_time).total_seconds())
             if status == RunStatus.FINISHED:
                 for metrics in ['mare', 'chatelet_mare', 'date_mare', 'date_chatelet_mare', 'rmse', 'mae', 'restored_epoch']:
                     value = r[f'metrics.{metrics}'] if f'metrics.{metrics}' in r.index else None

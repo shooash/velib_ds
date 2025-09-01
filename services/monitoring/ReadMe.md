@@ -1,5 +1,21 @@
 # Velib DS Monitoring Services
 
+## Setup
+1. Build docker containers
+```shell
+cd services/monitoring
+docker compose build
+```
+2. Setup Grafana
+- Use a password from services/monitoring/grafana/config.monitoring environment variable GF_SECURITY_ADMIN_PASSWORD to access Grafana server (default port: http://localhost:3000/)
+- Go to Dashboards - New - Import and import all Grafana Velib Dashboards from /data/grafana/dashboards
+
+## Run
+```shell
+cd services/monitoring
+docker compose up
+```
+
 ## Services
 
 ### MLFlow: 
