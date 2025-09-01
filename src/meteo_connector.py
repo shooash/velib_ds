@@ -30,7 +30,7 @@ class MeteoFranceConnector:
         if to_dt.tzinfo is None:
             to_dt = to_dt.replace(tzinfo=pytz.timezone('Europe/Paris'))
         from_dt_str = from_dt.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:00:00Z')
-        to_dt_str = to_dt.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:59:59Z')
+        to_dt_str = to_dt.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         url = self.DATA_NODE.format(station = station, from_dt = from_dt_str, to_dt = to_dt_str)
         head = {
             'accept' : '*/*',

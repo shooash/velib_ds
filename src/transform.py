@@ -150,7 +150,7 @@ class VelibTransformer:
             df = df.dropna()
             df = df[df['reconstructed'] == False]
             len_after = len(df)
-            log(f'Removed {len_before-len_after} rows on reconstructed cleaning, or {(len_before-len_after)/len_before*100:.2f}%')
+            log(f'Removed {len_before-len_after} rows on reconstructed and NA cleaning, or {(len_before-len_after)/len_before*100:.2f}%')
 
         df = df[self.features + self.added_columns].copy()
 

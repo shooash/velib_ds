@@ -24,7 +24,7 @@ import pandas as pd
 import keras
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error as MAE, root_mean_squared_error as RMSE
-from general import DataFiles, Storage
+from general import DataFiles, Storage, log
 
 
 MLFlow_URI = os.environ.get('MLFLOW_TRACKING_URI') or 'http://127.0.0.1:8080'
@@ -47,8 +47,8 @@ class BaseFlow:
         self.baselib = baselib
         self.mode = mode
         self.model_filename = None
-        self.init_log()
-        self.logger.info('Created instance for ' + self.name)
+        # self.init_log()
+        log('Created instance for ' + self.name)
         self.X_train = None
         self.df_test = None
         self.X_train = None
@@ -65,14 +65,14 @@ class BaseFlow:
 
     def set_params(self, **params) -> None:
         self.params = params
-        self.logger.debug('Params set to: ' + str(params))
-    
+        log('Params set to: ' + str(params))
+
     def update_params(self, **params) -> None:
         # enforce types like wh = float('1')
         params = {k : type(self.params[k])(v) for k, v in params.items() }
         self.params = self.params | params
-        self.logger.debug('Params updated with: ' + str(params))
-        self.logger.debug('Current params: ' + str(self.params))
+        log('Params updated with: ' + str(params))
+        log('Current params: ' + str(self.params))
 
     def fit(self, df : pd.DataFrame, y : pd.Series):
         self.X_train = df
@@ -128,7 +128,7 @@ class BaseFlow:
         return run_name
 
     def end(self):
-        self.save_mlflow()
+        self.save_mlflow(self.name)
 
     def save(self, save_model_name = None) -> None:
         base_name = '_'.join(
@@ -136,28 +136,28 @@ class BaseFlow:
             [f'{k}-{v}' for k,v in self.params.items()]
             )
         self.model_filename = self.save_model(save_model_name or base_name)
-        self.logger.info('Saved model to ' + self.model_filename)
+        log('Saved model to ' + self.model_filename)
         if self.mlflow_uri is not None:
             run_name = self.save_mlflow(base_name)
-            self.logger.info(f'Saved MLFlow run {run_name}')
-        self.logger.debug('All saved.')
+            log(f'Saved MLFlow run {run_name}')
+        log('All saved.')
 
-    def init_log(self):
-        # Create logger
-        self.logger = logging.getLogger('dual_logger')
-        self.logger.setLevel(logging.DEBUG)  # Set the logging level
-        if self.logger.hasHandlers():
-            return
-        file_handler = logging.FileHandler(Storage.logs(f'{self.name}.log'), mode='a')
-        file_handler.setLevel(logging.DEBUG)
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(message)s')
-        file_handler.setFormatter(formatter)
-        console_handler.setFormatter(formatter)
-        # Add handlers
-        self.logger.addHandler(file_handler)
-        self.logger.addHandler(console_handler)
+    # def init_log(self):
+    #     # Create logger
+    #     self.logger = logging.getLogger('dual_logger')
+    #     self.logger.setLevel(logging.DEBUG)  # Set the logging level
+    #     if self.logger.hasHandlers():
+    #         return
+    #     file_handler = logging.FileHandler(Storage.logs(f'{self.name}.log'), mode='a')
+    #     file_handler.setLevel(logging.DEBUG)
+    #     console_handler = logging.StreamHandler()
+    #     console_handler.setLevel(logging.DEBUG)
+    #     formatter = logging.Formatter('%(asctime)s - %(message)s')
+    #     file_handler.setFormatter(formatter)
+    #     console_handler.setFormatter(formatter)
+    #     # Add handlers
+    #     self.logger.addHandler(file_handler)
+    #     self.logger.addHandler(console_handler)
 
     def params_from_run_id(self, run_id: str):
         try:
@@ -307,9 +307,9 @@ class MLPFlow(BaseFlow):
         if self.params.get('emb'):
             for e in self.params.get('emb'):
                 self.embedding[e] = {k : i for i, k in enumerate(df[e].unique())}
-        self.logger.debug('Compiling the model with params: ' + str(self.params))
+        log('Compiling the model with params: ' + str(self.params))
         self.compile()
-        self.logger.debug('Training model with params: ' + str(self.params))
+        log('Training model with params: ' + str(self.params))
         # Filter embedded items
         columns = [c for c in df.columns if c not in self.COLS_BLACKLIST]
         # Prepare inputs to fit
@@ -330,7 +330,7 @@ class MLPFlow(BaseFlow):
                 ],
             verbose=2 #type: ignore
             )
-        self.logger.info('Model compiled and fitted.')
+        log('Model compiled and fitted.')
         return self
 
     # def test(self):
@@ -364,7 +364,7 @@ class MLPFlow(BaseFlow):
         Predict used preloaded model and params.
         '''
         super().predict(df)
-        self.logger.debug('Predicting...')
+        log('Predicting...')
         if self.model is None:
             raise RuntimeError('Model not defined.')
         # Filter embedded items
@@ -401,7 +401,7 @@ class MLPFlow(BaseFlow):
     def score(self):
         if self.df_test is None or self.y_test is None:
             raise RuntimeError('No scoring without X_test available')
-        self.logger.debug('Calculating metrics.')
+        log('Calculating metrics.')
         self.df_test['delta_test'] = self.y_test
         self.df_test['delta_pred'] = self.y_pred
         self.get_mare()
@@ -409,8 +409,8 @@ class MLPFlow(BaseFlow):
         self.metrics['mae'] = MAE(self.y_test, self.y_pred)
         if self.history is not None:
             self.metrics['epochs'] = len(self.history.epoch)
-        self.logger.info('Metrics calculated.')
-        self.logger.info(self.metrics)
+        log('Metrics calculated.')
+        log(self.metrics)
         return self
 
     @staticmethod
@@ -619,9 +619,9 @@ class MLPFlowSeries(BaseFlow):
 
     def train(self):
         super().train()
-        self.logger.debug('Compiling the model with params: ' + str(self.params))
+        log('Compiling the model with params: ' + str(self.params))
         self.compile()
-        self.logger.debug('Training model with params: ' + str(self.params))
+        log('Training model with params: ' + str(self.params))
         embedding = self.params['emb']
         inputs_dict = {}
         inputs_dict['features'] = self.X_train.values
@@ -642,12 +642,12 @@ class MLPFlowSeries(BaseFlow):
                 ],
             verbose=2
             )
-        self.logger.info('Model compiled and fitted.')
+        log('Model compiled and fitted.')
         return self
 
     def test(self):
         super().test()
-        self.logger.debug('Testing model...')
+        log('Testing model...')
         if self.model is None:
             raise RuntimeError('Model not defined.')
         embedding = self.params['emb']
@@ -670,7 +670,7 @@ class MLPFlowSeries(BaseFlow):
         Predict used preloaded model and params.
         '''
         super().predict(df)
-        self.logger.debug('Predicting...')
+        log('Predicting...')
         if self.model is None:
             raise RuntimeError('Model not defined.')
         embedding = self.params['emb']
@@ -710,7 +710,7 @@ class MLPFlowSeries(BaseFlow):
     def score(self):
         if self.df_test is None or self.y_test is None:
             raise RuntimeError('No scoring without X_test available')
-        self.logger.debug('Calculating metrics.')
+        log('Calculating metrics.')
         self.df_test['delta_test'] = self.y_test['delta_0']
         self.df_test['delta_pred'] = self.y_pred[:, 0]
         self.get_mare()
@@ -718,8 +718,8 @@ class MLPFlowSeries(BaseFlow):
         self.metrics['mae'] = MAE(self.y_test, self.y_pred)
         if self.history is not None:
             self.metrics['epochs'] = len(self.history.epoch)
-        self.logger.info('Metrics calculated.')
-        self.logger.info(self.metrics)
+        log('Metrics calculated.')
+        log(self.metrics)
         return self
     
     def set_model(self,  model):

@@ -9,7 +9,7 @@
     "nonscale" : ["weekend", "holiday", "preholiday", "postholiday", "pont", "vacances", "vacances_uni", "cluster", "station", "datehour"],
     "nonscale_comment" : "We keep cluster and station for embedding + datehour for dataset versioning",
     "target" : "delta",
-    "smoothen" : false,
+    "smoothen" : true,
     "smooth_window" : 3,
     "reconstructed" : false,
     "lagged_value" : true,

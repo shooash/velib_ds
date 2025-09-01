@@ -40,10 +40,13 @@ def log(*args, sep=' ', end='\n'):
     if LOGGER is None:
         LOGGER = logging.getLogger('VelibDS')
         if not LOGGER.handlers:
-            LOGGER.setLevel(logging.DEBUG)
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-            LOGGER.addHandler(console_handler)
+            # Add console logger only if no output is already setup to avoid duplicated logs
+            if not LOGGER.hasHandlers():
+                LOGGER.setLevel(logging.DEBUG)
+                console_handler = logging.StreamHandler()
+                console_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+                LOGGER.addHandler(console_handler)
+            # Add file logger only if VelibDS loggers are not present
             try:
                 file_handler = logging.FileHandler(Storage.logs('velibds.log'), mode='a')
                 file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
