@@ -6,7 +6,7 @@ services:
       args:
         USE_CUDA: "false"
     container_name: fastapi-server
-    command: uvicorn src.fastapi_main:app --host 0.0.0.0 --port 8000
+    command: uvicorn --app-dir /app/src fastapi_main:app --host 0.0.0.0 --port 8000
     ports:
       - "8000:8000"
     volumes:

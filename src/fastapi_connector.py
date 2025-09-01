@@ -113,7 +113,7 @@ class FastAPIConnector:
             Dict: Prediction result with station, datehour, and predicted delta.
         """
         try:
-            log(f'Running prediction for {stations} at {datehour}')
+            log(f'Running prediction for {len(stations)} stations at {len(datehour)} timestamps')
             # We need to construct the following model:
             # ['datehour', 'date', 'station', 'lat', 'lon', 'name', 'hour', 'month',
             # 'weekday', 'weekend', 'holiday', 'preholiday', 'postholiday', 'pont',
@@ -157,7 +157,7 @@ class FastAPIConnector:
         except Exception as e:
             raise HTTPException(500, f"Failed to predict: {str(e)}")
 
-    def predict_day(self, date: str) -> Dict[str, Union[str, List[Dict]]]:
+    def predict_day(self, date: str | list[str]) -> Dict[str, Union[str, List[Dict]]]:
         """
         Predict bike delta for all stations for a given day.
 

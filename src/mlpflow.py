@@ -416,8 +416,9 @@ class MLPFlow(BaseFlow):
     @staticmethod
     def load(basename : str):
         print(f"Loading model from {Storage.models(basename + '.pkl')}")
-        mlpflow = joblib.load(Storage.models(basename + '.pkl'))
+        mlpflow : MLPFlow = joblib.load(Storage.models(basename + '.pkl'))
         mlpflow.load_model(basename)
+        mlpflow.init_mlflow()
         return mlpflow
     
     @staticmethod

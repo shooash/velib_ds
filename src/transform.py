@@ -18,7 +18,7 @@ class VelibTransformerDefaults:
         'hotencode' : ['cluster'],
         'lags' : 0, # int: nombre de cols lag à ajouter WIP
         'lags_cols' : [], # les colonnes lags WIP
-        'scale' : ['capacity', 'temp', 'precip', 'gel', 'vent', 'conlat', 'conlon'], # cols à scaler
+        'scale' : ["capacity", "temp", "precip", "gel", "vent", "lat", "lon"],
         'nonscale' : ['weekend', 'holiday', 'preholiday', 'postholiday', 'pont', 'vacances', 'vacances_uni'], # cols sans scaling et encoding
         'target' : 'delta',
         'smoothen' : True, # Lissage activé
@@ -136,6 +136,8 @@ class VelibTransformer:
             new_features = [c for c in df.columns if c not in old_features]
             # self.drop_features(self.params['hotencode'])
             # self.add_features(new_features)
+            # Don't add duplicated columns
+            new_features = [f for f in new_features if f not in self.added_columns]
             self.added_columns.extend(new_features)
         
         if self.params.get('scale'):
@@ -154,10 +156,10 @@ class VelibTransformer:
 
         df = df[self.features + self.added_columns].copy()
 
-        # Change all types to float
-        # int_features = df.select_dtypes(include=['int', 'int16', 'int32', 'int64', 'integer'])
-        int_features = [c for c in df.columns if c not in self.params.get('nonscale', []) + [self.params['target']]]
-        float_types = dict(zip(int_features, [float] * len(int_features)))
+        # Change all num types to float
+        known_non_object_features = [c for c in ['reconstructed', 'lat', 'lon'] if c in df.columns]
+        num_features = df.select_dtypes(exclude=['object', 'datetime', 'datetimetz', 'timedelta']).drop(columns=[self.params['target']]).columns.to_list() + known_non_object_features
+        float_types = dict(zip(num_features, [float] * len(num_features)))
         df = df.astype(float_types)
 
         if df.isna().sum().sum() != 0:
