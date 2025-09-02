@@ -3,8 +3,8 @@ There're four services in the package:
 - Monitoring with MLFlow, Prometheus, Grafana and their helpers
 - Scheduling with AirFlow
 - DataPy API for lighter tasks like prediction
-- Big API for heavy tasks involving GPU like model training
-Services are run as docker containers with subservises configured within docker-compose files.
+- Big API for heavy tasks involving GPU, e.g. model training
+Services are run as docker containers with subservices configured within docker-compose files.
 Each service has it's subdirectory in **/services** folder.
 
 # Setup
@@ -18,6 +18,11 @@ cd services/scheduling ; docker compose build
 ```
 See specific setup recomendations in services subfolders.
 
+## Python environment
+For local Python environment use Python ver. 3.11+
+```shell
+pip install -r requirements.txt
+```
 # Local data folder
 Extracted and processed datasets, trained models, personalized configuration files as well as statistics and service information are saved to /local folder.
 
@@ -40,8 +45,10 @@ Testing is available for data loading and transformation to check the connection
 - **test_transformer_transform** (depends on test_transformer_fit)\
     Data transformation and feature engineering (VelibTransformer, VelibLagger, VelibClusterizer)
 ## Run tests
+
 ### From Python environment
 ```shell
+pip install -r requirements.txt
 pytest -x src/test.py
 ```
 
@@ -55,6 +62,10 @@ A prototype StreamLit application is available within the app (needs Python 3.11
 pip install -r requirements.txt
 streamlit run webapp.py
 ```
+To set non localhost adresses for BIG API and DataPy API nodes use BIG_API_URL and DATAPY_API_URL environment variables, eg:
+BIG_API_URL="http://192.168.1.100:8001"
+DATAPY_API_URL="http://192.168.1.10:8000"
+
 
 ## Predict Velib' Bicycles Flow
 ### Payload
