@@ -15,25 +15,6 @@ def show_clusters_map(stations : pd.DataFrame):
     geo = points_to_geo_json(borders)
     return draw_stations_choroplethmap_scatter(geo, stations, ret=True, title="Réseau Velib' de Paris", labels='cluster')
 
-    # if has_on_click is not None:
-    #     def handle_click_labels(trace, points, selector):
-    #         print(points)
-    #         if points.point_inds:
-    #             i = points.point_inds[0]
-    #             data = trace.locations[i]     # [label]
-    #             on_click_labels(data)
-
-    #     def handle_click_stations(trace, points, selector):
-    #         print(points)
-    #         if points.point_inds:
-    #             i = points.point_inds[0]
-    #             data = trace.customdata[i]     # [label, station]
-    #             on_click_stations(data)
-    #     if on_click_labels is not None:
-    #         fig.data[0].on_click(handle_click_labels)
-    #     if on_click_stations is not None:
-    #         fig.data[1].on_click(handle_click_stations)
-
 @st.cache_data
 def get_stations():
     try:

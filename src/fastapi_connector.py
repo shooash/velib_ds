@@ -1,8 +1,4 @@
 import os
-# if os.getenv('USE_CUDA'):
-#     import cudf.pandas
-#     cudf.pandas.install()
-
 from fastapi import HTTPException
 import pandas as pd
 import datetime
@@ -246,7 +242,6 @@ class FastAPIConnector:
                 "details": f"Trained on {len(df_transformed)} rows, val_loss: {min(model.history.history.get('val_loss', ['unknown']))}"
             }
         except Exception as e:
-            raise
             raise HTTPException(500, f"Failed to retrain model: {str(e)}")
 
 

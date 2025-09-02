@@ -1,11 +1,6 @@
 import plotly.graph_objects as go
 import pandas as pd
-from scipy.spatial import ConvexHull, distance_matrix
-import numpy as np
-from scipy.stats import zscore
-from sklearn.metrics import silhouette_score
-from sklearn.cluster import KMeans
-import plotly.express as px
+from scipy.spatial import ConvexHull
 from plotly.subplots import make_subplots
 
 def draw_fig(data, task, title = None, legend = None, xaxis = None, yaxis = None, ret = False):

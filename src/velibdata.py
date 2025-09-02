@@ -5,9 +5,6 @@ import numpy as np
 import pandas as pd
 from pandas import notna
 import pytz
-# from sklearn.cluster import KMeans
-# from sklearn.linear_model import LinearRegression, BayesianRidge
-# from sklearn.metrics import silhouette_score
 from scipy.stats import zscore, ks_2samp as kstest
 from sklearn.preprocessing import StandardScaler
 from pathlib import Path

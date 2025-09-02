@@ -1,16 +1,15 @@
 import streamlit as st
-from app.pages import intro, modeles, data_prep, conclusion, usage_predict, deployment, administration
+from app.pages import intro, modeles, data_prep, usage_predict, deployment, administration
 
 st.set_page_config(page_title="Projet Vélib'", layout="wide")
 
 st.sidebar.title("Navigation")
-# page = st.sidebar.radio("Aller à", ["Introduction", "Analyse exploratoire des données", "Modélisation", "Conclusion"])
+
 pages = {
     "Introduction": intro,
     "Exploration des données": data_prep,
     "Modélisation": modeles,
     "Déploiement": deployment,
-    # "Conclusion": conclusion,
     "Application": usage_predict,
     "Maintenance" : administration
 }

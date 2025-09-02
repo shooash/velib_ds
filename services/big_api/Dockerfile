@@ -1,5 +1,4 @@
 FROM tensorflow/tensorflow:2.19.0-gpu
-#FROM python:3.12-slim
 
 WORKDIR /app
 

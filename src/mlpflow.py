@@ -1,30 +1,17 @@
 import copy
-import datetime
-from time import sleep
-from typing import Literal, Tuple
-import mlflow.data.filesystem_dataset_source
+from typing import Literal
 import mlflow.data.pandas_dataset
-import mlflow.sklearn
 import mlflow.tensorflow
-from mlflow.models.signature import infer_signature
 import numpy as np
 import pandas as pd
 import mlflow
-# from .file_targets import LOGS_FOLDER, FULL_DATASET, DataFiles.train, DataFiles.test, PRED_DATASET
-# from .file_targets import TRANSFORMER_TRAIN_TEST, DataFiles.processed, TRANSFORMER_RELEASE, TRANSFORMER_PROD
 import joblib
-from pathlib import Path
-import logging 
-# from .data import import_dataset, save_dataset, load_or_import_pred_dataset
-# from .connect import get_run_id_from_file
 import os
-from typing import Literal, Tuple
 import pandas as pd
-# from tensorflow import keras # type: ignore
 import keras
 import tensorflow as tf
 from sklearn.metrics import mean_absolute_error as MAE, root_mean_squared_error as RMSE
-from general import DataFiles, Storage, log
+from general import Storage, log
 
 
 MLFlow_URI = os.environ.get('MLFLOW_TRACKING_URI') or 'http://127.0.0.1:8080'
@@ -47,7 +34,6 @@ class BaseFlow:
         self.baselib = baselib
         self.mode = mode
         self.model_filename = None
-        # self.init_log()
         log('Created instance for ' + self.name)
         self.X_train = None
         self.df_test = None
@@ -111,12 +97,6 @@ class BaseFlow:
                 self.with_dataset(self.X_train)
             dataset = mlflow.data.pandas_dataset.from_pandas(self.X_train.iloc[-min(100, len(self.X_train)):], name=self.dataid)
             mlflow.log_input(dataset, context=starter)
-        # if self.df_test is not None and self.X_test is not None:
-        #     first_dt = self.df_test['datehour'].min().strftime('%Y%m%d_%H')
-        #     last_dt = self.df_test['datehour'].max().strftime('%Y%m%d_%H')
-        #     dataset = mlflow.data.pandas_dataset.from_pandas(self.X_test.iloc[0:min(100, len(self.X_test))], name=f'{first_dt}-{last_dt}_test')
-        #     mlflow.log_input(dataset, context=self.mode)
-        # Enable mlflow autolog
         mlflow.tensorflow.autolog(log_models=False, registered_model_name=self.name, log_every_epoch=True, checkpoint=False, log_input_examples=True, log_datasets=False) # type: ignore
 
 
@@ -142,22 +122,6 @@ class BaseFlow:
             log(f'Saved MLFlow run {run_name}')
         log('All saved.')
 
-    # def init_log(self):
-    #     # Create logger
-    #     self.logger = logging.getLogger('dual_logger')
-    #     self.logger.setLevel(logging.DEBUG)  # Set the logging level
-    #     if self.logger.hasHandlers():
-    #         return
-    #     file_handler = logging.FileHandler(Storage.logs(f'{self.name}.log'), mode='a')
-    #     file_handler.setLevel(logging.DEBUG)
-    #     console_handler = logging.StreamHandler()
-    #     console_handler.setLevel(logging.DEBUG)
-    #     formatter = logging.Formatter('%(asctime)s - %(message)s')
-    #     file_handler.setFormatter(formatter)
-    #     console_handler.setFormatter(formatter)
-    #     # Add handlers
-    #     self.logger.addHandler(file_handler)
-    #     self.logger.addHandler(console_handler)
 
     def params_from_run_id(self, run_id: str):
         try:
@@ -193,14 +157,6 @@ class MLPFlow(BaseFlow):
     def __init__(self, mode : Literal['test', 'release', 'prod'] = 'test') -> None:
         super().__init__('MLP_flow', baselib='keras', mode=mode)
         self.embedding = {}
-        # self.stations_train = self.X_train['station'] if self.X_train is not None else None
-        # self.clusters_train = self.X_train['cluster'] if self.X_train is not None and 'cluster' in self.X_train.columns else None
-        # if self.df_test is not None:
-        #     self.stations_test = self.df_test['station']
-        #     self.clusters_test = self.df_test['cluster']
-        # else:
-        #     self.stations_test = None
-        #     self.clusters_test = None
         self.history = None
         self.params = {
             'wl' : 3.0,
@@ -290,12 +246,8 @@ class MLPFlow(BaseFlow):
                 loss = self.params['loss_fn']
                 metrics = 'mse'
 
-        # Input Example pour MLFlow register
-        # self.input_example = inputs_list + [feature_input] if inputs_list else feature_input
-
         self.model = keras.models.Model(
             inputs = inputs_dict,
-            # inputs=inputs_list + [feature_input] if inputs_list else feature_input, 
             outputs=output
             )
         self.model.compile(optimizer=optimizer, loss=loss, metrics=[metrics]) #type: ignore
@@ -333,28 +285,6 @@ class MLPFlow(BaseFlow):
         log('Model compiled and fitted.')
         return self
 
-    # def test(self):
-    #     super().test()
-    #     self.logger.debug('Testing model...')
-    #     if self.model is None:
-    #         raise RuntimeError('Model not defined.')
-    #     if self.X_test is None:
-    #         raise RuntimeError('X_test not defined.')
-    #     embedding = self.params['emb']
-    #     inputs_dict={}
-    #     inputs_dict['features'] = self.X_test.values
-    #     # Station Embedding
-    #     if 'station' in embedding and self.stations_test is not None:
-    #         inputs_dict['station'] = self.stations_test.values
-    #     if 'cluster' in embedding and self.clusters_test is not None:
-    #         inputs_dict['cluster'] = self.clusters_test.values
-    #     y_pred = self.model.predict(
-    #         inputs_dict,
-    #         # inputs_list + [self.X_test] if inputs_list else self.X_test, 
-    #         batch_size=self.params['batch'], verbose=2) #type: ignore
-    #     self.y_pred = y_pred.flatten().astype(float)
-    #     return self
-    
     def set_model(self,  model):
         self.model = model
         return self
