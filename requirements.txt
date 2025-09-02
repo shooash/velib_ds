@@ -1,0 +1,17 @@
+geopandas<=1.0.1
+imbalanced-learn
+ipython
+joblib
+json5
+jupyter
+keras
+matplotlib<=3.10.1
+matplotlib-inline<=0.1.7
+numpy
+pandas<=2.2.3
+plotly
+psycopg2-binary
+plotly
+nbformat
+streamlit>=1.49
+streamlit-calendar

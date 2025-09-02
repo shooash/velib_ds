@@ -136,12 +136,13 @@
           "editorMode": "code",
           "exemplar": false,
           "expr": "sum(mlflow_runs)",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
-          "instant": false,
+          "instant": true,
           "interval": "1m",
           "legendFormat": "__auto",
-          "range": true,
+          "range": false,
           "refId": "Google Runner Hourly Loads",
           "useBackend": false,
           "datasource": {
@@ -278,7 +279,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg_over_time(mlflow_last_run_time{starter='fit'}[1y])",
+          "expr": "avg_over_time(mlflow_last_run_time{starter='fit',experiment=\"MLP_flow\"}[1y])",
           "format": "table",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -351,7 +352,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mlflow_last_run_time{starter='train'}",
+          "expr": "last_over_time(mlflow_last_run_time{starter='fit', experiment=\"MLP_flow\"}[1y])",
           "format": "table",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -424,7 +425,7 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "avg(mlflow_last_run_time{starter='predict'})",
+          "expr": "avg_over_time(mlflow_last_run_time{starter='predict', experiment=\"MLP_flow\"}[1y])",
           "format": "table",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
@@ -497,14 +498,14 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "exemplar": false,
-          "expr": "mlflow_last_run_time{starter='predict'}",
-          "format": "table",
+          "expr": "mlflow_last_run_time{starter='predict', experiment=\"MLP_flow\"}",
+          "format": "heatmap",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
-          "instant": true,
+          "instant": false,
           "interval": "1m",
           "legendFormat": "__auto",
-          "range": false,
+          "range": true,
           "refId": "Google Runner Hourly Loads",
           "useBackend": false,
           "datasource": {
@@ -517,7 +518,7 @@
       "type": "stat"
     }
   ],
-  "refresh": "15m",
+  "refresh": "1m",
   "schemaVersion": 41,
   "tags": [
     "mlflow",
@@ -527,13 +528,13 @@
     "list": []
   },
   "time": {
-    "from": "now-30d",
+    "from": "now-2d",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Velib MLFlow",
   "uid": "b6a1e7d0-2de1-4ed5-9716-9e9d1b7f88f5",
-  "version": 11,
+  "version": 13,
   "weekStart": ""
 }

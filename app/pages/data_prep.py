@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from velibdslib import get_border, points_to_geo_json, draw_stations_choroplethmap_scatter, draw_fig
+from src.velibdslib import get_border, points_to_geo_json, draw_stations_choroplethmap_scatter, draw_fig
 
 
 def show_hourly_usage_pattern():

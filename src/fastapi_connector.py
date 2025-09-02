@@ -78,7 +78,8 @@ class FastAPIConnector:
         }]
         log(f'Loading OpenWeather forecasts for {len(locations)} locations...')
         forecast_data = OpenWeatherConnector(locations).to_pandas()
-        return df[filtered_columns].merge(forecast_data[['datehour'] + meteo_columns], on=['datehour'], how='left')
+        return_df = df[filtered_columns].merge(forecast_data[['datehour'] + meteo_columns], on=['datehour'], how='left')
+        return return_df
     
     def get_stations_df(self) -> pd.DataFrame:
         connector = VelibStationsConnector()
@@ -143,6 +144,9 @@ class FastAPIConnector:
             # target empty
             df['delta'] = 0
             # Load and apply transformer
+            if df.isna().any().any():
+                log(f'Warning: missing data after weather processing for {df.isna().sum().max()} of {len(df)} rows. Are the dates too far in the future? Clearing.')
+                df = df.dropna()
             transformer = VelibTransformer.load(DataFiles.transformer)
             # transformer.params['reconstructed'] = True # No need for cleanup
             df = transformer.transform(df)
@@ -150,8 +154,8 @@ class FastAPIConnector:
             df['prediction'] = model.predict(df.drop(columns='delta'))
             model.end()
             return {
-                "station": stations,
-                "datehour": results_date_list,
+                "station": df['station'].astype(str).to_list(),
+                "datehour": df['datehour'].dt.strftime("%Y-%m-%d %H:%M").to_list(),
                 "prediction": df['prediction'].astype(float).to_list()
             }
         except Exception as e:

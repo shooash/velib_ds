@@ -16,6 +16,8 @@ cd services/monitoring ; docker compose build
 cd services/scheduling ; docker compose build
 
 ```
+See specific setup recomendations in services subfolders.
+
 # Local data folder
 Extracted and processed datasets, trained models, personalized configuration files as well as statistics and service information are saved to /local folder.
 
@@ -45,8 +47,14 @@ pytest -x src/test.py
 
 # Usage
 The application is accessible via API calls to Big API or DataPy API. They are exposed to localhosts with ports:
-Big API node: localhost:8001
+Big API node: localhost:8001 (for NVidia systems)
 DataPy API node: localhost:8000
+
+A prototype StreamLit application is available within the app (needs Python 3.11+):
+```shell
+pip install -r requirements.txt
+streamlit run webapp.py
+```
 
 ## Predict Velib' Bicycles Flow
 ### Payload
