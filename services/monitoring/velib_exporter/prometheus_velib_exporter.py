@@ -102,12 +102,14 @@ class VelibExporter:
         with open(monitored_file) as f:
             monitored = f.read().splitlines()
         files = sorted(stats_dir.glob('*-from-*.json'), reverse=False)
-        files = [f for f in files if f.name not in monitored]
-        # One json file per run
-        if not len(files):
-            log(f'No new dataset stats.')
+        files_filtered = [f for f in files if f.name not in monitored]
+        if not files_filtered:
+            files_filtered = [files[-1]] if len(files) else []
+        if not len(files_filtered):
+            log(f'No dataset stats.')
             return
-        filename = files[0]
+        # One json file per run
+        filename = files_filtered[0]
         try:
             with open(filename) as f:
                 data = json.load(f)
