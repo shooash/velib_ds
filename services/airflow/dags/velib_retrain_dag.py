@@ -6,7 +6,6 @@ from airflow.utils.dates import days_ago
 import requests
 import logging
 
-# Default arguments for the DAG
 default_args = {
     'owner': 'velib-team',
     'depends_on_past': False,
@@ -17,7 +16,6 @@ default_args = {
     'retry_delay': timedelta(minutes=10),
 }
 
-# Create the DAG
 dag = DAG(
     'velib_model_retrain',
     default_args=default_args,
@@ -41,7 +39,6 @@ def check_fastapi_health():
         logging.error(f"Failed to connect to FastAPI service: {str(e)}")
         return False
 
-# Task to check FastAPI health
 health_check = PythonOperator(
     task_id='check_fastapi_health',
     python_callable=check_fastapi_health,
@@ -58,5 +55,4 @@ retrain_model = SimpleHttpOperator(
     dag=dag,
 )
 
-# Set task dependencies
 health_check >> retrain_model

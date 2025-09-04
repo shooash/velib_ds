@@ -17,12 +17,11 @@ default_args = {
     'retry_delay': timedelta(minutes=5),
 }
 
-# Create the DAG
 dag = DAG(
     'velib_data_refresh',
     default_args=default_args,
     description='Refresh Velib data from external sources',
-    schedule_interval='0 */6 * * *',  # Every 6 hours
+    schedule_interval='0 */6 * * *', 
     catchup=False,
     tags=['velib', 'data', 'refresh'],
 )
@@ -41,14 +40,12 @@ def check_fastapi_health():
         logging.error(f"Failed to connect to FastAPI service: {str(e)}")
         return False
 
-# Task to check FastAPI health
 health_check = PythonOperator(
     task_id='check_fastapi_health',
     python_callable=check_fastapi_health,
     dag=dag,
 )
 
-# Task to refresh data
 refresh_data = SimpleHttpOperator(
     task_id='refresh_data',
     http_conn_id='velib_fastapi',
@@ -58,5 +55,4 @@ refresh_data = SimpleHttpOperator(
     dag=dag,
 )
 
-# Set task dependencies
 health_check >> refresh_data

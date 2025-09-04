@@ -54,22 +54,8 @@ The Airflow setup includes:
 
 - **Airflow UI**: http://localhost:8080
 - **FastAPI Health**: http://localhost:8001/health
-- **Streamlit App**: http://localhost:8501
 
-## Customization
 
-### Changing Schedules
-
-Edit the `schedule_interval` in DAG files:
-- `@daily` - Every day at midnight
-- `0 */6 * * *` - Every 6 hours
-- `0 2 * * 0` - Every Sunday at 2 AM
-
-### Adding New DAGs
-
-1. Create new Python file in `dags/` directory
-2. Follow the existing DAG structure
-3. Restart Airflow services
 
 ### Environment Variables
 

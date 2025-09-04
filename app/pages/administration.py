@@ -17,7 +17,7 @@ def show():
                     logs = log_file.read()
                     st.text_area("Logs", logs, height=300, label_visibility="hidden")
             except FileNotFoundError:
-                st.write("Fichier de log non disponible pour le moment.")
+                st.write("Fichier de logs non disponible pour le moment.")
     if st.button("Charger les données sur les stations"):
         result = st.empty()
         with result:

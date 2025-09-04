@@ -17,8 +17,5 @@ USER airflow
 COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt
 
-# Copy custom configuration
-COPY config/airflow.cfg /opt/airflow/airflow.cfg
-
-# Set the correct permissions
-RUN chown -R airflow:root /opt/airflow/airflow.cfg
+# Copy configuration with correct permissions
+COPY --chown=airflow:root config/airflow.cfg /opt/airflow/airflow.cfg

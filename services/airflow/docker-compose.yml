@@ -21,7 +21,7 @@ services:
       AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
       AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
       _PIP_ADDITIONAL_REQUIREMENTS: ''
-      # Custom environment variables for Velib project
+      # Custom environment variables for project
       VELIB_FASTAPI_URL: http://fastapi_big:8000
       VELIB_RETRAIN_ENDPOINT: /admin/retrain
       VELIB_REFRESH_ENDPOINT: /admin/refresh
