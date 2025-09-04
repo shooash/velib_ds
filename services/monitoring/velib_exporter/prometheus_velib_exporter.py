@@ -101,7 +101,7 @@ class VelibExporter:
         Path(monitored_file).touch()
         with open(monitored_file) as f:
             monitored = f.read().splitlines()
-        files = sorted(stats_dir.glob('*-from-*.json'), reverse=True)
+        files = sorted(stats_dir.glob('*-from-*.json'), reverse=False)
         files = [f for f in files if f.name not in monitored]
         # One json file per run
         if not len(files):

@@ -35,7 +35,7 @@ services:
       python prometheus_velib_exporter.py
     volumes:
       - ./velib_exporter:/app
-      - ../../local/data/stats:/app/stats
+      - ../../local/stats:/app/stats
       - ../../local/logs:/app/logs
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:8080
