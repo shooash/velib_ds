@@ -20,7 +20,7 @@ dag = DAG(
     'velib_model_retrain',
     default_args=default_args,
     description='Retrain Velib ML model with latest data',
-    schedule_interval='0 2 * * 0',  # Every Sunday at 2 AM
+    schedule_interval='0 14 * * 6',  # Every Saturday at 2 PM
     catchup=False,
     tags=['velib', 'ml', 'retrain'],
 )

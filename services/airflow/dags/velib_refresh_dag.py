@@ -21,7 +21,7 @@ dag = DAG(
     'velib_data_refresh',
     default_args=default_args,
     description='Refresh Velib data from external sources',
-    schedule_interval='0 */6 * * *', 
+    schedule_interval='0 12 * * 6', 
     catchup=False,
     tags=['velib', 'data', 'refresh'],
 )
@@ -29,7 +29,7 @@ dag = DAG(
 def check_fastapi_health():
     """Check if FastAPI service is healthy before making requests"""
     try:
-        response = requests.get('http://fastapi_big:8000/health', timeout=10)
+        response = requests.get('http://host.docker.internal:8000/health', timeout=10)
         if response.status_code == 200:
             logging.info("FastAPI service is healthy")
             return True
