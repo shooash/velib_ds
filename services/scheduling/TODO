@@ -1,4 +1,0 @@
-- docker-compose.yml for AirFlow
-- airflow/airflow.py to create dags for:
-    - weekly dataset updates
-    - daily prediction reports
