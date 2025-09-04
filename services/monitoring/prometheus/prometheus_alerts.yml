@@ -16,6 +16,14 @@ groups:
         annotations:
           summary: "Data drop for velib_status register"
           description: "We're getting over 5 stations less for the last two hours than during the last day."
+      - alert: DataShift
+        expr: avg(velibdata_kstest) > 0.1 or max(velibdata_kstest) > 0.2
+        for: 2h
+        labels:
+          severity: error
+        annotations:
+          summary: "Data shift detected"
+          description: "The K-S test indicates a significant shift in the data distribution."
       - alert: GCPDown
         expr: up{job="VelibSQL"} == 0
         labels:
