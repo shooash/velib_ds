@@ -106,7 +106,7 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
-  "date": "2025-09-01 12:00"
+  "date": "2025-09-01"
 }'
 ```
 ```shell
@@ -130,17 +130,17 @@ The output data is in a dataset order with columns presented as lists of values:
 - **date**: a date string in a format:"YYYY-MM-DD" or a list of date strings.
 ```shell
 curl -X 'POST' \
-  'http://localhost:8000/predict_day' \
+  'http://localhost:8000/predict_station_day' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
   "station": "82328045",
-  "date": "2025-09-01 12:00"
+  "date": "2025-09-01"
 }'
 ```
 ```shell
 curl -X 'POST' \
-  'http://localhost:8000/predict' \
+  'http://localhost:8000/predict_station_day' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -159,7 +159,7 @@ This would fetch the data from the last timestamp of the dataframe stored on ser
 Processed datasets are saved to /local/data folder.
 ```shell
 curl -X 'POST' \
-  'http://localhost:8000/admin/refresh' \
+  'http://localhost:8001/admin/refresh' \
   -H 'accept: application/json' \
   -d ''
 ```
@@ -170,7 +170,7 @@ A new Keras mlp model is trained using parameters from a configuration file /loc
 During this stage a stations-clusters dataset is saved to /local/data and models (VelibTransformer and MLPFlow) are saved to /local/models to be used for predictions.
 ```shell
 curl -X 'POST' \
-  'http://localhost:8000/admin/retrain' \
+  'http://localhost:8001/admin/retrain' \
   -H 'accept: application/json' \
   -d ''
 ```
