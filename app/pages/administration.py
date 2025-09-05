@@ -11,13 +11,26 @@ def show():
     st.title("Maintenance")
     st.markdown("Cette page est dédiée à la maintenance du système.")
     if st.button("Voir les logs"):
-        with st.expander("Logs du système", expanded=True):
+        with st.expander("Logs du système (dernières 500 lignes)", expanded=True):
             try:
-                with open('local/logs/velibds.log', "r") as log_file:
-                    logs = log_file.read()
-                    st.text_area("Logs", logs, height=300, label_visibility="hidden")
+                with open('local/logs/velibds.log', "rb") as log_file:
+                    lines = log_file.readlines()[-500:]
+                    logs = b"".join(lines).decode("utf-8", errors='replace')
+                    # logs = log_file.read().decode("utf-8", errors='replace')
+                st.text_area("Logs", logs, height=300, label_visibility="hidden")
+                # Add JavaScript to scroll the text area to the end
+                st.components.v1.html(
+                    """<script>
+                    const textArea = parent.document.querySelector('textarea[aria-label="Logs"]');
+                    if (textArea) {
+                        textArea.scrollTop = textArea.scrollHeight;
+                    }
+                    </script>""",
+                    height=1
+                )
             except FileNotFoundError:
                 st.write("Fichier de logs non disponible pour le moment.")
+
     if st.button("Charger les données sur les stations"):
         result = st.empty()
         with result:
