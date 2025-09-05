@@ -178,3 +178,4 @@ local_data/
 local/
 # Alia
 flows/test.ipynb
+/local
