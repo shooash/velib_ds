@@ -1,44 +1,26 @@
 import requests, datetime
 import os
-from sqlalchemy import MetaData
-from sqlalchemy.sql import insert
-from google.cloud.sql.connector import Connector
-import pg8000
-import sqlalchemy
+import psycopg2
+from psycopg2.extras import execute_values
 
 def connect_to_cloud_sql():
     """
     Connect to the Cloud SQL instance using the Cloud SQL Python Connector.
     """
     try:
-        # Get the connection details from environment variables
-        db_user = "velib_daily"
-        db_pass = SQL_PASSWORD
-        db_name = "velib"
-        connection_name = "dreamteam-406713:europe-west9:lucinia-sql"  # Connection name
+        DB_USER = "velib_daily"
+        DB_PASS = SQL_PASSWORD
+        DB_NAME = "velib"
+        DB_HOST = SQL_HOST
 
-        # Initialize the Cloud SQL connector
-        connector = Connector()
-        def getconn() -> pg8000.dbapi.Connection:
-            conn: pg8000.dbapi.Connection = connector.connect(
-                connection_name,
-                "pg8000",
-                user=db_user,
-                password=db_pass,
-                db=db_name,
-            )
-            return conn
-
-        # Establish a secure connection to the Cloud SQL instance
-        pool = sqlalchemy.create_engine(
-            "postgresql+pg8000://",
-            creator=getconn,
-            # ...
-        )
-
+        conn = psycopg2.connect(host=DB_HOST, 
+                                database=DB_NAME, 
+                                user=DB_USER, 
+                                password=DB_PASS)
+        conn.autocommit = True
+        cur = conn.cursor()
         print("Connected to the database successfully!")
-        return pool
-
+        return cur
     except Exception as e:
         print(f"Error connecting to the database: {e}")
         raise
@@ -61,7 +43,6 @@ def get_velib_status(debug = False):
         return None
 
     for station in info['data']['stations']:
-        # if station:
         r = {
             'station' : station.get('station_id'),
             'bikes' : station.get('num_bikes_available'),
@@ -72,22 +53,34 @@ def get_velib_status(debug = False):
             'is_returning' : station.get('is_returning'),
             'is_renting' : station.get('is_renting'),
             'dt' :  datetime.datetime.fromtimestamp(station.get('last_reported')),
-            'poll_dt' : datetime.datetime.now()
+            'poll_dt' : datetime.datetime.now(datetime.timezone.utc)
         }
-        results.append(r)
+        results.append(
+            (
+                r['station'], r['bikes'], r['max_bikes'],
+                r['mechanical'], r['ebike'], r['is_installed'],
+                r['is_returning'], r['is_renting'],
+                r['dt'], r['poll_dt']
+            )
+        )
     print(f'Loaded {len(results)} items.')
     return results
 
-def push_results(p, results):
-    metadata = MetaData()
-    metadata.reflect(bind=p)
-    velib_stations = metadata.tables['velib_status']
-    insert_stmt = insert(velib_stations)
+INSERT_PRE = """
+    INSERT INTO velib_status (
+        station, bikes, max_bikes, mechanical, ebike,
+        is_installed, is_returning, is_renting, dt, poll_dt
+    )
+    VALUES %s
+"""
+def push_results(cur, results):
     print(f'Adding {len(results)} rows to "velib_status"')
-    with p.begin() as transaction:
-        c = transaction.execute(insert_stmt, results)
+    execute_values(
+        cur,
+        INSERT_PRE,
+        results)
     print(f'SQL job finished.')
-    return str(c.rowcount)
+    return str("Success")
 
 def main(req):
     debug = True if req.get_json().get('debug') else False
