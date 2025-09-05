@@ -13,7 +13,7 @@ You would want to prebuild the containers before running the services.
 cd services/big_api ; docker compose build
 cd services/datapy_api ; docker compose build
 cd services/monitoring ; docker compose build
-cd services/scheduling ; docker compose build
+cd services/airflow ; docker compose build
 
 ```
 See specific setup recomendations in services subfolders.
@@ -26,6 +26,31 @@ pip install -r requirements.txt
 # Local data folder
 Extracted and processed datasets, trained models, personalized configuration files as well as statistics and service information are saved to /local folder.
 
+# First Run
+
+For the first run:
+- Start all the services (eg, run docker compose up):
+  - services/monitoring
+  - services/big_api
+  - services/datapy_api
+  - services/airflow
+- Build and run Streamlit docker image or setup python environment and run streamlit:
+```shell
+docker build -f Dockerfile.webapp -t velib_webapp .
+docker run -p 8501:8501 velib_webapp
+```
+or
+```shell
+pip install -r requirements.txt
+streamlit run webapp.py
+```
+- In Streamlit app (http://localhost:8501/) create first dataset and models:
+  - Go to Maintenance
+  - Run "Mettre à jour les données"
+  - Run "Réentraîner les données"
+
+*You can run "refresh" and "retrain" actions from AifFlow as well (http://localhost:8880/)*
+
 # Testing
 Testing is available for data loading and transformation to check the connection, imports and dependency.
 
@@ -33,7 +58,7 @@ Testing is available for data loading and transformation to check the connection
 - **test_velibdata_extract_new** \
     Data extraction from GCP and MeteoFrance API (VelibData, VelibConnector, MeteoFranceConnector).
 - **test_velibdata_use_cache**\
-    Data loading from cache (VelibData).
+    Data loading from cache if it exists (VelibData).
 - **test_velib_transform** (depends on: test_velibdata_use_cache) \
     ETL data transformation (VelibData)
 - **test_transformer_smoothen** (depends on: test_velib_transform)\
@@ -191,3 +216,22 @@ curl -X 'POST' \
   -H 'accept: application/json' \
   -d ''
 ```
+
+# Google Cloud Deployment
+To deploy the application with new GCP data storage please use the scripts in "GCP SQL" (for PostgreSQL Cloud server) and "GCP run" (for Google Cloud Run service) folders.
+
+You will have to update the configuration for VelibConnector (src/velib_connector.py):
+```python
+    DB_HOST = '34.163.111.108' # put your external PostgreSQL ip
+    DB_NAME = 'velib' # put your database name
+    DB_USER = 'reader' # the username to access data
+    DB_PASSWORD = 'public' # the password (use environment variables if the access is not public)
+```
+## Experimental: Usage without GCP
+If you don't have a GCP running and need to test the application, mind, that the prediction results most probably won't be accurate enough without latest Velib' data.
+
+The data loading is done by VelibData class (src/velibdata.py). By default it is set to load the data with a VelibConnector.
+
+To change the default behaviour to use only cached datasets, set VelibDataDefaults.cache = True (line 30 at src/velibdata.py).
+
+Note that you would need to have the velib and weather datasets saved to local/data/raw_velib.h5 and local/data/raw_meteofrance.h5. The keys for hdf data are 'velib' and 'meteo'.

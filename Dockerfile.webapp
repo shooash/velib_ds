@@ -19,5 +19,8 @@ COPY webapp.py .
 # Expose port
 EXPOSE 8501
 
+ENV BIG_API_URL="http://host.docker.internal:8001"
+ENV DATAPY_API_URL="http://host.docker.internal:8000"
+
 # Run Streamlit app
 CMD ["streamlit", "run", "webapp.py", "--server.port=8501", "--server.address=0.0.0.0"]
