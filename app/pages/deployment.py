@@ -12,7 +12,7 @@ OUTRO = """
 Les données principales pour l'entrainement de modèle sont récupérées via l'API Vélib' dans le dataset historique sur le serveur PostgreSQL.
 La base de données et le service de la récupération de données sont hébergés sur Google Cloud Platform.
 
-Les données climatologiques utilisées pour l'entrainement de modèle proviennent de l'API MétéoFrance.
+Les données météorologiques utilisées pour l'entrainement de modèle proviennent de l'API MétéoFrance.
 
 Les prévisions météorologiques nécessaires pour les prédictions sont chargées depuis le service OpenWeatherMap.
 """.strip()
